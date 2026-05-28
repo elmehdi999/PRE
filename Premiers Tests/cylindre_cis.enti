@@ -1,0 +1,53 @@
+22 ListEntitesGeometrique
+11 Version 1.0
+10 17 EntiteGeometrique
+11 Version 3.0
+36 Points, courbes, surfaces et volumes
+22 Mode=eModeUtiliseLieux
+6 0 0 0 0 0 0 0 0 0 1 2 3 4 5 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+27 Points, courbes et surfaces
+22 Mode=eModeUtiliseLieux
+5 0 0 0 0 0 0 0 0 0 1 2 3 4 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+17 Points et courbes
+22 Mode=eModeUtiliseLieux
+0 0 0 0 0 0 0 0 0 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+7 Volumes
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 5 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+8 Surfaces
+22 Mode=eModeUtiliseLieux
+5 0 0 0 0 0 0 0 0 0 1 2 3 4 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+7 Courbes
+22 Mode=eModeUtiliseLieux
+0 0 0 0 0 0 0 0 0 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+6 Points
+22 Mode=eModeUtiliseLieux
+0 0 0 0 0 0 0 0 0 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+8 Elements
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 5 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+11 bord_droite
+22 Mode=eModeUtiliseLieux
+2 0 0 0 0 0 0 0 0 1 4 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+11 bord_gauche
+22 Mode=eModeUtiliseLieux
+2 0 0 0 0 0 0 0 0 0 2 17 EntiteGeometrique
+22 ListEntitesGeometrique

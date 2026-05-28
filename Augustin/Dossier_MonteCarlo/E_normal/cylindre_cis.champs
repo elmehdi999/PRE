@@ -1,0 +1,195 @@
+#Probleme E aleatoire normale
+
+#On dÃ©clare un problÃ¨me EF que l'on renseignera et que l'on nomme ProbEFGlobal:
+problemeef ProbEFGlobal
+problemeef ProbFactice1
+problemeef ProbFactice2
+# DÃ©finition du champ de transformation gÃ©omÃ©trique utilisÃ© pour le calcul:
+#champgeoquad champgeo "cylindre_cis.cgeoquad"
+champgeolin champgeo
+
+# Inconnu dans le calcul:
+v3dquad "u" [0,0,0]
+scalaire "normeU" norme2(V3D(u))
+scalquad "normeUContinu" 0
+
+
+# Paramètres
+scalaire "Nu" 0.3 
+scalaire E_x distribution_normale(200,10)
+scallin E_ale 0          
+
+
+
+scalaire "Mu" E_ale/(2 * (1 + Nu))
+scalaire "Lambda" (E_ale * Nu)/ ((1 + Nu)*(1 - (2*Nu)))
+scalaire "DeuxMu" 2*Mu
+# Paramètres pour le cas de chargement
+scalaire "Theta" 0
+scalaire "Phi" 0
+scalaire "Rho" 5
+scalaire "YieldStress" 0.35
+#Definition des vecteurs avec les donnees en python
+
+descripteur_deformation_fluide DDF_u u
+
+# DÃ©finition de la matrice identitÃ© et nulle
+to2sym Id [1,1,1,0,0,0]
+to2sym Z1 [0,0,0,0,0,0]
+to2sym Z2 [0,0,0,0,0,0]
+
+# Construction de sigma (pour l'exportation):
+empilement_OpAlg Div_Vit_u_Id       ax(Div_Vit_u,Id)
+empilement_OpAlg Sigma              axpby(Lambda,Div_Vit_u_Id,DeuxMu,Tens_Vit_Def_u)  
+scalaire "normeSigma" norme_frobenius(TO2SYM(Sigma))
+scalquad "normeSigmaContinu" 0
+
+# Construction pour le critere de von mises
+scalaire         MUnDemitrSigma     -1*(Sigma[00]+Sigma[11]+Sigma[22])/(2*sqrt(3))
+scalaire         RacineTroisDemi          sqrt(3/2)      
+empilement_OpAlg TroisDemiSigmaDev  axpby(RacineTroisDemi,Sigma,MUnDemitrSigma,Id)      
+scalaire "SigmaVonMises" norme_frobenius(TO2SYM(TroisDemiSigmaDev))
+scalquad "SigmaVonMisesContinu" 0
+scalaire "Yield" if(SigmaVonMises<YieldStress, 0, 1)
+
+#Paramètres d'importation
+vecteur vec_u [ProbEFGlobal, "colonne"]
+vecteur sigma_u [ProbFactice1, "colonne"]
+vecteur norme_u [ProbFactice2, "colonne"]
+
+# ParamÃ¨tres qui serviront Ã  crÃ©er un schÃ©ma d'intÃ©gration:
+{ ParamSchema
+    scalaire ptintgarete               3
+    scalaire ptintgface3               12
+    scalaire ptintgface4               2
+    scalaire ptintgelement1d           2
+    scalaire ptintgtriangle            12
+    scalaire ptintgquadrangle          2
+    scalaire ptintgtetra               15
+    scalaire ptintgprismetri_legendre  2
+    scalaire ptintgprismetri_triangle  3
+    scalaire ptintghexa                2
+}
+
+# CrÃ©ation d'un schÃ©ma d'intÃ©gration selon les paramÃ¨tres du "namespace" ParamSchema
+schemaintg schema_intg ParamSchema
+
+# CrÃ©ation d'exportations:
+{ exportation            export_champs2
+   format_exportation     VTK
+   asgnDegreInterpolation Exportation::eMAILLAGE_LINEAIRE
+   asgnExporteToujoursMaillage f
+
+   # On ajout spÃ©cifiquement ce champ, car il ne fait pas partie des inconnus variationnels:
+   ajouteChamp             u 
+   ajouteChamp            normeU
+   ajouteChamp            normeSigmaContinu
+   ajouteChamp            E_ale
+   ajouteChamp            DeuxMu
+   ajouteChamp            Lambda
+   #ajouteChamp            SigmaVonMisesContinu
+   #ajouteChamp            Yield
+
+  prefixe_sorties   $CheminAccesExport$/resultats
+
+}
+{exportation              export_u
+    format_exportation VTK
+    asgnDegreInterpolation Exportation::eMAILLAGE_LINEAIRE
+    asgnExporteToujoursMaillage f
+    ajouteChamp   u
+    ajouteChamp normeSigmaContinu
+
+    prefixe_sorties $CheminAccesExport$/resultats
+
+}
+pp_exportation exportation_u [export_u, "resultats/u_normale_",2,true,false,false,false]
+#c'est le prefixe suivant qui compte pour le chemin d'exportation
+pp_exportation exportation_gen2 [export_champs2,"resultats/normale_",2,true,false,false,false] 
+#pp_exportation exportation_gen2 [export_champs]
+
+
+# CrÃ©ation d'option PETSc qui serviront Ã  dÃ©finir un solveur (ksp, pc et mat):
+{options_prefixees_petsc o_slin
+  ksp_type preonly
+  #ksp_type gmres
+  ksp_atol 1e-20
+  ksp_rtol 1e-12
+  ksp_divtol 1e30
+  ksp_max_it 4000
+  pc_type lu
+}
+
+#Création d'option PETSc qui serviront à définir un solveur
+{options_prefixees_petsc o_slin
+  ksp_type preonly
+  ksp_atol 1e-20
+  ksp_rtol 1e-12
+  ksp_divtol 1e30
+  ksp_max_it 4000
+  pc_type lu
+}
+
+#Création du solveur
+{solveur_lin Solveur(ProbEFGlobal)
+  prefixe_options o_slin
+}
+
+# GESTION DE L'ALEATOIRE
+#///////////////////////
+# Les PP pour geler une valeur à chaque itération
+#////////////////////////////////////////////////
+# Les PP pour exporter le résultats
+#//////////////////////////////////
+
+# On reinterpole le stress dans un champ continu pour faciliter le traitement des données exportées
+pp_projection_l2 stressReinterpoleContinu [normeSigma,normeSigmaContinu,schema_intg]
+pp_projection_l2 VMReinterpoleContinu [SigmaVonMises,SigmaVonMisesContinu,schema_intg]
+pp_projection_l2 normeReinterpoleContinu [normeU, normeUContinu, schema_intg]
+pp_reinterpole pp_jinterpole [E_ale, E_x]
+
+# Définition des problèmes factices, nécessaires à l'exportation
+{ ProbFactice1
+  tfdiffusion Tf_factice1 [champgeo, normeSigmaContinu, normeSigmaContinu, Z1, schema_intg]
+}
+{ ProbFactice2
+  tfdiffusion Tf_factice2 [champgeo, normeUContinu, normeUContinu, Z2, schema_intg]
+}
+
+# Ajouter les PP au problème EF
+{ ProbEFGlobal
+  ajoute_pp [stressReinterpoleContinu,FinPasDeTemps]
+  ajoute_pp [VMReinterpoleContinu,FinPasDeTemps]
+  ajoute_pp [normeReinterpoleContinu,FinPasDeTemps]
+  ajoute_pp [pp_jinterpole,DebutPasDeTemps]
+
+#ajoute_pp [pp_exporte_deplacement,FinPasDeTemps]
+}
+
+
+#Les conditions limites et termes de formulation:
+{ ProbEFGlobal
+  tfalphadivuxdivv3d TF_lambdaDiv_u [champgeo, u, u, Lambda, schema_intg]
+  tf2scal0epsv3dxepsv3d(matettrans) TF_2mu_deformation [champgeo, Mu, u, u, schema_intg]
+  
+  # Conditions aux limites:
+  vectoriel3d "g1" [Rho,0,0]
+
+  vectoriel3d "fixe" [0,0,0]
+  vectoriel3d "bouge" [10,0,0]
+
+  dirichlet vectoriel3d "bord_gauche" "u" "fixe"
+  #dirichlet vectoriel3d "bord_droite" "u" "bouge"
+  neumann vectoriel3d "bord_droite" "u" "g1" "schema_intg"
+
+}
+pp_copie_champ_dans_vecteur pp_copie_vec_u [u,vec_u,u]
+pp_copie_champ_dans_vecteur pp_copie_sigma_u [normeSigmaContinu, sigma_u, normeSigmaContinu]
+pp_copie_champ_dans_vecteur pp_copie_norme_u [normeUContinu, norme_u, normeUContinu]
+pp_resolution_probleme resolution [ProbEFGlobal,Solveur(ProbEFGlobal)]
+#pp_resolution_factice1 resolution_factice1 [ProbFactice1, Solveur(ProbFactice1)]
+
+{ Actions
+  #Solveur(ProbEFGlobal)
+  #exportation_gen2
+}

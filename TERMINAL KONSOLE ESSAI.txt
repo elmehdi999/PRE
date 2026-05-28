@@ -1,0 +1,168 @@
+TERMINAL KONSOLE ESSAI
+
+*****************************************************************************
+* Giref : bienvenue sur erable : Fedora release 43 (Forty Three)            *
+* en opération depuis 16 jours, 0 heures, 2 minutes.                        *
+*                                                                           *
+* L'accès et l'utilisation de ce système sont                               *
+* limités aux personnes autorisées seulement.                               *
+* En cas de problème, contactez: admin@giref.ulaval.ca                      *
+*****************************************************************************
+(15:38:24) [erable]:~> cd
+.cache/         Desktop/        .local/         poisson_carre/  .vscode/
+.config/        Downloads/      .pki/           .var/           .vscode-shared/
+(15:38:24) [erable]:~> cd poisson_carre/
+(15:38:29) [erable]:poisson_carre> ls -l
+total 8
+-rw-r--r-- 1 eennahas giref 3818 May 25 15:34 ex_poisson.champs
+-rw-r--r-- 1 eennahas giref  718 May 25 15:35 ex_poisson-collection.champs
+(15:38:32) [erable]:poisson_carre> /cluster/
+admin/                       MEFPP_IC_images/             test_asti/
+icecream-1.2/                message_du_jour_exemple.txt
+logiciels/                   OLD/
+(15:38:32) [erable]:poisson_carre> /cluster/logiciels/
+AppImage/                                        ParaView-5.6.0-MPI-Linux-64bit/
+bin/                                             ParaView-5.6.0-osmesa-MPI-Linux-64bit/
+data_bug/                                        ParaView-5.6.1-osmesa-MPI-Linux-64bit/
+FreeFem4.4.2/                                    ParaView-5.8.0-MPI-Linux-Python2.7-64bit/
+geogebra/                                        ParaView-5.8.0-osmesa-MPI-Linux-Python2.7-64bit/
+GIREF/                                           python36/
+gmsh/                                            python36.OLD/
+gmsh-1.65.0/                                     python36.save/
+gmsh-2.16.0-Linux/                               qjson-0.8.1/
+gmsh-3.0.6-Linux64/                              qjson-git/
+gmsh-4.12.2-Linux64/                             qtcreator/
+gmsh-4.2.1-Linux64/                              qtcreator-4.4.1/
+gmsh-4.2.2-Linux64/                              qtcreator441/
+iMEF++_Fedora30/                                 qtcreator-4.7.1/
+iMEF++_nocturne.OLD/                             qtcreator-4.8.1/
+include/                                         qtcreator-4.8.2/
+intel/                                           qtcreator-4.9.1/
+intel-2018-04-18/                                share/
+lib/                                             teams-for-linux/
+MATLAB/                                          teams-for-linux-0.7.0/
+matlab/                                          teams-for-linux-1.0.0/
+MEFediteur_nocturne/                             texlive/
+MEF++.OLD/                                       vtk-5.10-64bits/
+mefpp_doc/                                       vtk-5.8/
+mefpp-tmp/                                       Vu/
+mmg/                                             Vu-4.2.18/
+mmg-5.2.4-Linux-4.2.0-1-amd64/                   webmef/
+--More--^C
+(15:38:50) [erable]:poisson_carre> /cluster/logiciels/MEF
+MEFediteur_nocturne/ MEF++.OLD/
+(15:38:50) [erable]:poisson_carre> /cluster/logiciels/GIREF/GIREF
+GIREF_20240227.AppImage    GIREF.2024-05-15.AppImage  GIREF.AppImage
+GIREF.2024-02-28.AppImage  GIREF.2024-07-29.AppImage
+(15:38:50) [erable]:poisson_carre> /cluster/logiciels/GIREF/GIREF.AppImage
+
+  GIREF - Outils pour la simulation numérique
+
+  Pour exécuter un programme ou une option en particulier, le ou la passer en argument.
+  Par exemple : GIREF.AppImage MEF++ Prefixe_fichiers
+                GIREF.AppImage mpirun -np 2 MEF++ Prefixe_fichiers
+                GIREF.AppImage -u tbriffar
+
+  Liste des programmes disponibles:
+
+  adapMultVar
+  ConversionMaillage
+  creeChampGeoQuad
+  decoupeEnTetra
+  diviseAreteEn2
+  exporteASCII
+  exporteMPI
+  iMEF++
+  MEF++
+  reinterpole
+
+  Autres options:
+  -h, --help                  Affiche cette aide
+  -v, --version               Informations sur la version courante de l'AppImage
+  -m, --move                  Déplace l'AppImage vers ~/.local/bin/
+  -r, --remove                Supprime l'AppImage
+  -s, --silent                Ne pas vérifier les mises à jour au lancement de l'AppImage (à placer devant le programme à lancer)
+  -u, --update LOGIN_GIREF    Mettre à jour la version courante de l'AppImage
+
+(15:39:20) [erable]:poisson_carre> /cluster/logiciels/GIREF/GIREF.AppImage -v
+*** Informations sur la version de l'AppImage ***
+
+# Date de livraison : 2026-05-25
+
+# SHAs dépôts :
+GIREF: 3a5e7359971ac91f32b1de123ed4391f1e940de6
+InterfaceQtVTK : 6cbfa4fe26a160a4d9504315f3087552d5a227f0
+
+# Libs versions :
+MKL   : 2024.1
+MPI   : 3.25.1
+PETSC : 3.25.1
+
+En cas de problèmes ou pour toute question, contactez promefpp@giref.ulaval.ca
+(15:39:44) [erable]:poisson_carre> /cluster/logiciels/GIREF/GIREF.AppImage MEF++ ex_poisson
+Info      : LDSchemaIntegration::lisDeclarationParamSchemaschema_intg
+Info      : LDProblemeEF::lisDeclaration  probDida
+Info      : LDNamespaceBase::lisDeclaration: exportation probDida format_exportation     GIREF
+Info      : LDExportation_Format::lisDeclaration exportation probDida format_exportation GIREF
+Info      : LDNamespaceBase::lisDeclaration: exportation probDida format_exportation     VTK
+Info      : LDExportation_Format::lisDeclaration exportation probDida format_exportation VTK
+Info      : Le mot-clé asgndegreinterpolation est obsolète (avec ou sans majuscules), utilisez le mot-clé degre_interpolation
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation probDida degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : LDExportation_DegreInterpolation::lisDeclaration exportation probDida degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : Le mot-clé EXPORTATION::EMAILLAGE_LINEAIRE est obsolète (avec ou sans majuscules), utilisez le mot-clé LIN
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation probDida ajoute_champ            K
+Info      : LDExportation_Champ::lisDeclaration exportation probDida ajoute_champ K
+Info      : LDNamespaceBase::lisDeclaration: exportation probDida prefixe_sorties resultats_poisson
+Info      : LDExportation_Prefixe::lisDeclaration exportation probDida prefixe_sorties resultats_poisson
+Info      : LDTFGenerique::lisDeclaration tfdiffusion TFDiffT [champgeo, T, T, K, schema_intg]
+Info      : On ajoute le TF TFDiffT au problème: probDida pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfsourcefvscal TFSrcF [champgeo, F, T, schema_intg]
+Info      : On ajoute le TF TFSrcF au problème: probDida pour contribution à la partie  stationnaire.
+Info      : LDCondLimDirichlet::lisDeclaration dirichlet scalaire "bord_bas" "T" "nul"
+Info      : LDCondLimDirichlet::lisDeclaration dirichlet scalaire "bord_droite" "T" "nul"
+Info      : LDCondLimDirichlet::lisDeclaration dirichlet scalaire "bord_haut" "T" "nul"
+Info      : LDCondLimDirichlet::lisDeclaration dirichlet scalaire "bord_gauche" "T" "nul"
+Info      : LDNamespaceBase::lisDeclaration: solveur_lin solveur(probDida) prefixe_options options_slin
+Info      : LDOptionsSolveurs_OptionPrefixe::lisDeclaration solveur_lin solveur(probDida) prefixe_options options_slin
+Info      : LDActions::lisDeclaration solveur(probDida)
+Info      : LDPPResolutionProbleme::lisDeclaration [solveur(probDida)] lPPResoud_0_dans_section_actions_pour_solveur_solveur(probDida)
+Info      : On ne crée pas de maillage de peau car on n'a pas trouvé la chaine nommée: corps::entite_pour_peau
+  Residual norms for options_slin solve.
+  0 KSP Residual norm 4.040078873541e-01
+  1 KSP Residual norm 1.400748290315e-02
+  2 KSP Residual norm 1.051020672064e-03
+  3 KSP Residual norm 8.544379097997e-05
+  4 KSP Residual norm 6.905781668134e-06
+  5 KSP Residual norm 4.948914868605e-07
+  6 KSP Residual norm 4.386028650474e-08
+  7 KSP Residual norm 2.718640607807e-09
+  8 KSP Residual norm 2.598101141599e-10
+  9 KSP Residual norm 2.261359880237e-11
+ 10 KSP Residual norm 1.179808210851e-12
+ 11 KSP Residual norm 1.265504096739e-13
+Info      : Vous avez ajouté le champ K à l'exportation probDida.
+Attention : Pas d'export possible des champs PPI pour le pilote d'exportation au format PiloteExportationGIREF pour l'export probDida
+Attention : Pas d'export possible des champs PPI pour le pilote d'exportation au format PiloteExportationVTK pour l'export probDida
+Info      : On a exécuté 1 actions.
+(15:40:52) [erable]:poisson_carre> ls -la
+total 168
+drwxr-xr-x  2 eennahas giref  4096 May 25 15:40 .
+drwx------ 12 eennahas giref  4096 May 25 15:37 ..
+-rw-------  1 eennahas giref 12566 May 25 15:40 chrono.txt
+-rw-r--r--  1 eennahas giref  3818 May 25 15:34 ex_poisson.champs
+-rw-r--r--  1 eennahas giref   718 May 25 15:35 ex_poisson-collection.champs
+-rw-------  1 eennahas giref  1155 May 25 15:40 ex_poisson.enti
+-rw-------  1 eennahas giref   458 May 25 15:40 ex_poisson.geo
+-rw-------  1 eennahas giref 27635 May 25 15:40 ex_poisson.mail
+-rw-------  1 eennahas giref 10064 May 25 15:40 ex_poisson.msh
+-rw-------  1 eennahas giref 49352 May 25 15:40 resultats_poisson.cont.vtu
+-rw-------  1 eennahas giref   417 May 25 15:40 resultats_poisson.K.champto2sym
+-rw-------  1 eennahas giref 27635 May 25 15:40 resultats_poisson.mail
+-rw-------  1 eennahas giref  1531 May 25 15:40 resultats_poisson.T.champscallin
+(15:41:17) [erable]:poisson_carre> paraview &
+[1] 211829
+(15:41:43) [erable]:poisson_carre>

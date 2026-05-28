@@ -1,0 +1,159 @@
+//+************************************************************************
+// --- Logiciel MEF++
+// ---
+// --- Copyright 1996-2018 GIREF, Université Laval
+// --- TOUS DROITS RÉSERVÉS
+// --- ALL RIGHTS RESERVED
+// ---
+// --- Ce logiciel est couvert par la Loi sur le droit d'auteur.
+// --- L'utilisation, ou la modification de ce logiciel sous toutes ses
+// --- formes, que ce soit code source ou code compilé, à des fins
+// --- personnelles et non commerciales sont autorisées sans frais pour
+// --- autant que la présente notice de copyright ainsi que cettelGrou
+// --- permission apparaissent dans toutes les copies ainsi que dans la
+// --- documentation.
+// --- Le GIREF et l'Université Laval ne prétendent en aucune façon que
+// --- ce logiciel convient à un emploi quelconque. Celui-ci est
+// --- distribué sans aucune garantie implicite ou explicite.
+//+************************************************************************
+
+booleen GIREF_AJOUTE_PILE_APPEL_ERMSG false
+booleen GIREF_VERBOSE_SOLVEUR false
+booleen GIREF_MODE_VERBOSE_CHRONO 0
+booleen GIREF_COMPILE_EXPALG false
+booleen GIREF_MAPLE_OPTIMISE_EXPALG false
+
+##############################################################################################################################################################################################
+# Spécification du champ géométrique à utiliser pour le problème (linéaire ou quadratique).
+# Nous prenons ici un champ géométrique linéaire:
+champgeolin champgeo
+
+# Création d'un ProblemeEF pour accueillir TFs, PPs, CLs, Exportations:
+# ici on nomme notre problème probDida
+problemeef ProbDida
+problemeef ProbFactice
+##############################################################################################################################################################################################
+# température est initialisée à 0, le champ est linéaire:
+scallin T        0
+
+# Définition du champ F utilisé dans le terme source :
+scalaire F      0
+
+# Définition du tenseur de conductivité thermique
+scalconstelem K 100 
+scalconstelem K_zerzer 100  
+#to2symconstelem K_mat [K,K,K,0,0,0]
+
+# Définition de la variable aléatoire de loi normale 
+scalaire ale distribution_normale(10,0)
+
+# Définition de la matrice nulle pour le problème factice
+to2sym Z [0,0,0,0,0,0]
+
+# Paramètres d'importation
+vecteur T_imp [ProbDida, "colonne"]
+vecteur K_imp [ProbFactice, "colonne"]
+
+# Rayon de convolution
+scalaire rayon 5
+
+# Variable pour le problème factice
+scalquad X 0
+##############################################################################################################################################################################################
+# Définition des exportation et pp_exportation
+{exportation              export_TK
+    format_exportation VTK
+    asgnDegreInterpolation Exportation::eMAILLAGE_LINEAIRE
+    asgnExporteToujoursMaillage faux
+    ajouteChamp   T
+    ajouteChamp   K
+    prefixe_sorties $CheminAccesExport$/resultat
+}
+pp_exportation exportation_TK [export_TK, "resultats/T_resultat_",2,true,false,false,false]
+
+##############################################################################################################################################################################################
+# Définition de l'interpolation de K aléatoire
+pp_reinterpole pp_tirage_ale [K, ale]
+
+# Définition de la convolution
+pp_filtrage_gaussien applique_filtre_gaussien [K,rayon]
+
+# Définition des copies dans les variables d'exportation
+pp_copie_champ_dans_vecteur pp_copie_T_imp [T,T_imp,T]
+pp_copie_champ_dans_vecteur pp_copie_K_imp [K,K_imp,K]
+
+##############################################################################################################################################################################################
+# Paramètres qui serviront à créer un schéma d'intégration. Plus il y a de points, et plus la solution est
+# exacte. Il faut respecter certains critères lorsqu'on met des points (seulement certaines valeurs fonctionnent
+# dépendamment du type d'élément choisi) :
+{ ParamSchema
+  scalaire ptintgarete               2
+  scalaire ptintgface3               3
+  scalaire ptintgface4               2
+  scalaire ptintgelement1d           2
+  scalaire ptintgtriangle            12
+  scalaire ptintgquadrangle          2
+  scalaire ptintgtetra               5
+  scalaire ptintgprismetri_legendre  2
+  scalaire ptintgprismetri_triangle  3
+  scalaire ptintghexa                2
+}
+
+# Création d'un schéma d'intégration selon les paramètres du "namespace" ParamSchema
+schemaintg schema_intg ParamSchema
+
+##############################################################################################################################################################################################
+# Création d'option PETSc qui serviront à définir un solveur (ksp, pc et mat).
+# Pour l'instant, on n'a pas besoin de toucher à cette partie:
+{ options_prefixees_petsc options_slin
+  ksp_type cg
+  ksp_atol 1e-20
+  ksp_rtol 1e-12
+  ksp_divtol 1e30
+  ksp_max_it 4000
+  ksp_monitor
+  #ksp_monitor_draw
+  #ksp_view
+
+  pc_type gamg
+}
+
+# Création du solveur *linéaire* à partir des options o_slin
+{ solveur_lin Solveur(ProbDida)
+   prefixe_options options_slin
+}
+
+# Définition de la résolution du problème de conduction
+pp_resolution_probleme resolution [ProbDida,Solveur(ProbDida)]
+
+##############################################################################################################################################################################################
+# Ci-dessous se trouvent les termes de formulation du problème ainsi que les conditions aux limites:
+{ ProbDida
+  # Termes de formulations :
+  tfdiffusiondiffusivite1d    TFDiffT [champgeo, T, T, K, schema_intg]
+  TFSourceFVScal TFSrcF  [champgeo, F, T,    schema_intg]
+
+  scalaire cond_entree  100
+  scalaire cond_sortie -100
+  dirichlet scalaire "bord_gauche" "T" "cond_entree"
+  neumann scalaire   "bord_droite" "T" "cond_sortie" "schema_intg"
+  # Ajout des pp 
+  # Ces pp sont exécutés dans le .champs 
+  # On peut aussi les récupérér et éxecuter dans le .py
+  ajoute_pp [pp_tirage_ale,DebutPasDeTemps]
+  ajoute_pp [applique_filtre_gaussien,DebutPasDeTemps]
+  
+  ajoute_pp [exportation_TK,FinPasDeTemps]
+  #ajoute_pp [pp_copie_T_imp,FinPasDeTemps]
+  #ajoute_pp [pp_copie_K_imp,FinPasDeTemps]
+}
+
+{ ProbFactice
+  tfdiffusion Tf_factice [champgeo, X, X, Z, schema_intg]
+}
+##############################################################################################################################################################################################
+
+#Actions réalisées lors de la compilation du code
+{ Actions
+  Solveur(ProbDida)
+}

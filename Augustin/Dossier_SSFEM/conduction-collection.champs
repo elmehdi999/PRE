@@ -1,0 +1,5 @@
+//Fichier de conversion de carre_2d.msh vers le format MEF++
+
+convertisseurversgiref conduction [carre_uniforme.msh,MSH,2,Lin] // On demande la conversion du fichier 'carre_2d.msh' au format 'MSH' 2D,  
+                                                            // vers des �l�ments g�om�triquement 'P1' (Lin) au format MEF++ avec le pr�fixe 'diffusion_stat'.
+                                                            // Le fichier '.msh' a été obtenu à partir de carre_test.geo et gmsh
