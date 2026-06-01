@@ -47,7 +47,7 @@ class ssfem:
         #Initialisation du problème EF et des bibliothèques petsc4py et mefpp4py
         prefixe = "conduction"                  #Mettre nom du fichier .champs
         petsc4py.init(sys.argv)
-        mefpp.initialise(prefixe,pModeTV=False)     #Si pModeTV=True , déclenchement de Warning et erreurs qui empêchent l'éxecution
+        mefpp.initialise(prefixe)     #NE PREND PLUS L'ARG pModeTV (Si pModeTV=True , déclenchement de Warning et erreurs qui empêchent l'éxecution)
         mefpp.litEtExecuteActionsDansCollection()
         collection=mefpp.reqCollectionDeCorps()
         collection.lisDonneesDeBase([prefixe])
