@@ -1,9 +1,6 @@
 ########################################################################################################
 # Code SSFEM conduction thermique 2D
-# Auteur originel : Augustin PERRIN
-# Modification (2026) : El Mehdi EN-NAHAS 
-# -> Remplacement de l'expansion de Karhunen-Loève (KL) par les Random Fourier Features (RFF)
-# -> Utilisation de conduction_rff.champs
+# Auteur: El Mehdi EN-NAHAS 
 ########################################################################################################
 
 import numpy.random as rd
@@ -18,16 +15,12 @@ import ks_stat
 import matplotlib.pyplot as plt
 
 class ssfem:
-    def __init__(self,ordreKL,ordrePC):
-        if ordreKL < ordrePC:
-            print("ordreKL < ordrePC impossible")
+    def __init__(self, D_rff, ordrePC):
+        if D_rff < ordrePC:
+            print("Attention : D_rff < ordrePC")
         
-        # OBLIGATION RFF : L'ordre (qui est la dimension totale) doit être pair car on génère des paires (cos, sin)
-        if ordreKL % 2 != 0:
-            print("Pour la méthode RFF, l'ordreKL (dimension stochastique totale) doit être un nombre pair.")
-            raise ValueError
-        
-        self.ordreKL = ordreKL
+        self.D_rff = D_rff  # C'est directement le nombre de vagues (ex: 100)
+        self.ordreKL = 2 * D_rff  # La dimension stochastique totale reste le double (cos + sin)
         self.ordrePC = ordrePC
         
         # 1. On pointe vers le nouveau fichier .champs RFF
@@ -44,6 +37,7 @@ class ssfem:
         # 2. PRISE EN CHARGE RFF : On récupère les "télécommandes" pointant vers la mémoire C++
         self.champ_wx = gfc.reqChamp("omega_x")
         self.champ_wy = gfc.reqChamp("omega_y")
+        self.champ_phase = gfc.reqChamp("phase_rff") # NOUVEAU
 
         self.matK = gfc.reqMatricePETSc("MatK").reqMat()
         self.matK.assemble()
@@ -61,13 +55,12 @@ class ssfem:
         """
         Génération RFF et assemblage des matrices
         """
-        # Le nombre de fréquences à tirer est la moitié de la dimension totale
-        D = self.ordreKL // 2 
-        l_corr = 0.12 # Longueur de corrélation du matériau
+        D = self.D_rff 
+        l_corr = 0.12
         
-        # Tirage des fréquences spatiales
+        # Tirage des fréquences spatiales (D lignes, 2 colonnes)
         self.w = np.random.normal(0, 1.0/l_corr, (D, 2))
-        facteur_norm = 1.0 / np.sqrt(D) # Normalisation de Bochner
+        facteur_norm = 1.0 / np.sqrt(D)
         
         # Apport déterministe
         self.pp_assemblageMatEtRes.execute()
@@ -80,13 +73,12 @@ class ssfem:
             
         # Apport stochastique RFF
         for j in range(D):
-            # On injecte les nouvelles fréquences dans MEF++
+            # On injecte les nouvelles fréquences
             self.champ_wx.asgnValeur(float(self.w[j, 0]))
             self.champ_wy.asgnValeur(float(self.w[j, 1]))
             
             # --- 1. MATRICE COSINUS ---
-            # On redéfinit la formule en C++ pour utiliser un cosinus
-            self.gfc.lireLigne("scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y)=K_intermediaire*cos(omega_x*x + omega_y*y)")
+            self.champ_phase.asgnValeur(0.0) # phase = 0, c'est un cosinus
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
             
@@ -96,8 +88,7 @@ class ssfem:
             self.l_matK.append(mat_cos)
             
             # --- 2. MATRICE SINUS ---
-            # On redéfinit la formule en C++ pour utiliser un sinus
-            self.gfc.lireLigne("scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y)=K_intermediaire*sin(omega_x*x + omega_y*y)")
+            self.champ_phase.asgnValeur(-np.pi / 2.0) # phase = -pi/2, cos(x - pi/2) = sin(x)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
             

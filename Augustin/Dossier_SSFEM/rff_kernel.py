@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # Paramètres de test
     dimension = 2       # On teste en 2D !
     precision_D = 500   # On tire 500 fréquences
-    longueur_l = 1.0    
+    longueur_l = 0.5  
     
     rff = RandomFourierFeatures(dimension, precision_D, longueur_l)
     
