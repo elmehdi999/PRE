@@ -55,10 +55,11 @@ scalaire T_exacte x
 # Variables de la méthode RFF (fréquences spatiales)
 scalaire omega_x 0.0
 scalaire omega_y 0.0
+scalaire phase_rff 0.0
 #PRISE EN CHARGE PYTHON
 
 # Termes pour la formulation trigonométrique RFF
-scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y)=K_intermediaire*cos(omega_x*x + omega_y*y)      
+scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y, phase_rff)=K_intermediaire*cos(omega_x*x + omega_y*y + phase_rff)      
 #PRISE EN CHARGE PYTHON
 
 

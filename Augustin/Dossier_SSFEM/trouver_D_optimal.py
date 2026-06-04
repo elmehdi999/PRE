@@ -6,7 +6,7 @@ def trouver_D_optimal_robuste(longueur_l, epsilon_cible, taille_grille=30, max_D
     """
     Cherche D optimal avec arrêt prématuré (Early Stopping) si la convergence stagne.
     """
-    D_test = 50
+    D_test = 25
     pas_D = 100
     
     #X, Y = [], []
@@ -90,5 +90,20 @@ def trouver_D_optimal_robuste(longueur_l, epsilon_cible, taille_grille=30, max_D
     """
     return best_D
 
-# Lancement
-#trouver_D_optimal_robuste(0.2, 0.05)
+if __name__ == "__main__":
+    import sys
+    
+    # Valeurs par défaut
+    longueur_l_defaut = 0.12
+    epsilon_cible_defaut = 0.05
+    
+    if len(sys.argv) >= 3:
+        l_param = float(sys.argv[1])
+        eps_param = float(sys.argv[2])
+    else:
+        print(f"Arguments manquants. Utilisation des valeurs par défaut : l={longueur_l_defaut}, epsilon={epsilon_cible_defaut}")
+        l_param = longueur_l_defaut
+        eps_param = epsilon_cible_defaut
+        
+    # Lancement de la recherche
+    D_optimal = trouver_D_optimal_robuste(l_param, eps_param)

@@ -1,0 +1,53 @@
+22 ListEntitesGeometrique
+11 Version 1.0
+10 17 EntiteGeometrique
+11 Version 3.0
+8 Elements
+22 Mode=eModeUtiliseLieux
+9 0 0 0 0 0 0 0 0 0 1 2 3 4 5 6 7 8 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+8 bord_bas
+22 Mode=eModeUtiliseLieux
+3 0 0 0 0 0 0 0 0 1 5 6 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+10 bord_basSC
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 3 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+11 bord_droite
+22 Mode=eModeUtiliseLieux
+3 0 0 0 0 0 0 0 0 4 6 8 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+13 bord_droiteSC
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 4 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+11 bord_gauche
+22 Mode=eModeUtiliseLieux
+3 0 0 0 0 0 0 0 0 3 5 7 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+13 bord_gaucheSC
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 2 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+9 bord_haut
+22 Mode=eModeUtiliseLieux
+3 0 0 0 0 0 0 0 0 2 7 8 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+11 bord_hautSC
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 1 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+5 gamma
+22 Mode=eModeUtiliseLieux
+8 0 0 0 0 0 0 0 0 1 2 3 4 5 6 7 8 17 EntiteGeometrique
+22 ListEntitesGeometrique
