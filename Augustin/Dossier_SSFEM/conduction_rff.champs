@@ -30,7 +30,7 @@ problemeef ProbFactice3
 ##############################################################################################################################################################################################
 # champ d'interpolation, définit en tout les noeuds et interpolable pour obtenir T(x,y)
 scallin T        0
-
+scallin T_exacte_scallin 0
 scallin T_exporte 1
 scallin test 1
 #vecteur T_exporte [ProbFactice, "colonne"]
@@ -68,6 +68,7 @@ to2sym Z [0,0,0,0,0,0]
 
 # Paramètres d'importation
 vecteur T_imp [ProbDida, "colonne"]
+vecteur T_exacte_vec [ProbDida, "colonne"]
 vecteur K_imp [ProbFactice, "colonne"]
 vecteur F_imp [ProbFactice2, "colonne"]
 
@@ -125,11 +126,13 @@ pp_exportation exportation_TK [export_TK, "resultats/T_resultat_ssfem",2,true,fa
 
 
 pp_reinterpole pp_interpoleK [K, K_intermediaire2] 
+pp_reinterpole pp_interpoleTexacte [T_exacte_scallin, T_exacte]
 pp_reinterpole pp_interpoleF [F, F_intermediaire]
 
 
 # Définition des copies dans les variables d'exportation
 pp_copie_champ_dans_vecteur pp_copie_T_imp [T,T_imp,T]
+pp_copie_champ_dans_vecteur pp_copie_Texacte_vec [T_exacte_scallin, T_exacte_vec, T]
 pp_copie_champ_dans_vecteur pp_copie_K_imp [K,K_imp,K]
 pp_copie_champ_dans_vecteur pp_copie_F_imp [F, F_imp, F]
 
