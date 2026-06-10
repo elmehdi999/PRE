@@ -1,0 +1,153 @@
+// +************************************************************************
+// --- Logiciel MEF++ - Problème stochastique RFF sur plaque trouée
+// +************************************************************************
+booleen GIREF_AJOUTE_PILE_APPEL_ERMSG false
+booleen GIREF_VERBOSE_SOLVEUR false
+booleen GIREF_MODE_VERBOSE_CHRONO 0
+booleen GIREF_COMPILE_EXPALG false
+booleen GIREF_MAPLE_OPTIMISE_EXPALG false
+
+################################################################################
+# 1. LECTURE ET CONVERSION DU NOUVEAU MAILLAGE GMSH
+################################################################################
+convertisseurversgiref conduction_trou [plaque_trouee.msh,MSH,2,Lin]
+
+champgeolin champgeo
+
+problemeef ProbDida
+problemeef ProbFactice
+problemeef ProbFactice2
+problemeef ProbFactice3
+
+################################################################################
+# 2. DÉCLARATION DES CHAMPS ET VARIABLES
+################################################################################
+scallin T        0
+scallin T_exporte 1
+scallin test 1
+
+scalaire F 0
+scalaire F_intermediaire 0
+scallin F2 0
+scallin F3 0
+
+scalaire K_intermediaire 1  
+scalconstelem K 1
+
+# --- VARIABLES RFF INJECTÉES PAR PYTHON ---
+scalaire omega_x 0
+scalaire omega_y 0
+scalaire phase_rff 0
+
+# Définition analytique de l'onde de conductivité RFF
+# MEF++ évalue directement les coordonnées spatiales globales x et y du maillage
+scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y, phase_rff) = K_intermediaire * cos(omega_x * x + omega_y * y + phase_rff)
+
+to2sym Z [0,0,0,0,0,0]
+
+# Structures d'échange pour PETSc et Python
+vecteur T_imp [ProbDida, "colonne"]
+vecteur K_imp [ProbFactice, "colonne"]
+vecteur F_imp [ProbFactice2, "colonne"]
+
+{ options_prefixees_petsc MatK
+  mat_type aij
+}
+matrice MatK        [ProbDida]
+matrice MatKbis     [ProbDida]
+vecteur Residu      [ProbDida, "colonne"]
+vecteur Residu2     [ProbDida, "ligne"]
+
+################################################################################
+# 3. CONFIGURATION DES EXPORTATIONS PARAVIEW (VTK)
+################################################################################
+{exportation       export_TK
+    format_exportation VTK
+    asgnDegreInterpolation Exportation::eMAILLAGE_LINEAIRE
+    asgnExporteToujoursMaillage faux
+    ajouteChamp   T
+    ajouteChamp   K
+    prefixe_sorties $CheminAccesExport$/resultat
+}
+pp_exportation exportation_TK [export_TK, "resultats/T_resultat_ssfem",2,true,false,false,false]
+
+{exportation        T_ssfem
+    format_exportation VTK
+    ajouteChamp T_exporte
+    prefixe_sorties $CheminAccesExport$/resultat
+}
+
+################################################################################
+# 4. OPÉRATEURS DE PRÉ-POST TRAITEMENT (PP)
+################################################################################
+pp_reinterpole pp_interpoleK [K, K_intermediaire2] 
+pp_reinterpole pp_interpoleF [F, F_intermediaire]
+
+pp_copie_champ_dans_vecteur pp_copie_T_imp [T,T_imp,T]
+pp_copie_champ_dans_vecteur pp_copie_K_imp [K,K_imp,K]
+pp_copie_champ_dans_vecteur pp_copie_F_imp [F, F_imp, F]
+
+pp_copie_vecteur_dans_champs pp_visualisation_T    [T_imp, T_exporte, T]
+
+pp_assemble ppAssMatK     [ProbDida,MatK]
+pp_assemble ppAssRes      [ProbDida, Residu]
+pp_assemble ppAssMatEtRes   [ProbDida, MatK, Residu]
+
+{ ParamSchema
+  scalaire ptintgarete               2
+  scalaire ptintgface3               3
+  scalaire ptintgface4               2
+  scalaire ptintgelement1d           2
+  scalaire ptintgtriangle            12
+  scalaire ptintgquadrangle          2
+  scalaire ptintgtetra               5
+  scalaire ptintgprismetri_legendre  2
+  scalaire ptintgprismetri_triangle  3
+  scalaire ptintghexa                2
+}
+schemaintg schema_intg ParamSchema
+
+{ options_prefixees_petsc options_slin
+  ksp_type preonly
+  ksp_atol 1e-20
+  ksp_rtol 1e-12
+  ksp_divtol 1e30
+  ksp_max_it 4000
+  ksp_monitor
+}
+
+{ solveur_lin Solveur(ProbDida)
+  prefixe_options options_slin
+}
+pp_resolution_probleme resolution [ProbDida,Solveur(ProbDida)]
+
+################################################################################
+# 5. FORMULATION FAIBLE ET CONDITIONS AUX LIMITES COMPLEXES
+################################################################################
+{ ProbDida
+  tfdiffusiondiffusivite1d    TFDiffT [champgeo, T, T, K, schema_intg]
+  TFSourceFVScal TFSrcF  [champgeo, F, T,    schema_intg]
+
+  # Définition des températures imposées
+  scalaire T_chaud 100.0
+  scalaire T_froid 0.0
+
+  # Application sur les labels physiques définis dans ton fichier .geo de Gmsh
+  dirichlet scalaire "bord_trou" "T" "T_chaud" 
+  dirichlet scalaire "bord_exterieur" "T" "T_froid" 
+
+  ajoute_pp [exportation_TK,FinPasDeTemps]
+}
+
+{ ProbFactice
+  tfdiffusion Tf_factice [champgeo, K, K, Z, schema_intg]
+}
+{ ProbFactice2
+  tfdiffusion Tf_factice2 [champgeo, F2, F2, Z, schema_intg]
+}
+{ ProbFactice3
+  tfdiffusion Tf_factice3 [champgeo, F3, F3, Z, schema_intg]
+}
+
+{ Actions
+}

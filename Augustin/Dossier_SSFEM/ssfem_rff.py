@@ -24,7 +24,7 @@ class ssfem:
         self.ordrePC = ordrePC
         
         # 1. On pointe vers le nouveau fichier .champs RFF
-        prefixe = "conduction_rff"
+        prefixe = "conduction_trou"
         petsc4py.init(sys.argv)
         mefpp.initialise(prefixe)
         mefpp.litEtExecuteActionsDansCollection()

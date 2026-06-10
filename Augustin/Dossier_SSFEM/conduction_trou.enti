@@ -1,0 +1,18 @@
+22 ListEntitesGeometrique
+11 Version 1.0
+3 17 EntiteGeometrique
+11 Version 3.0
+8 Elements
+22 Mode=eModeUtiliseLieux
+3 0 0 0 0 0 0 0 0 0 1 2 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+14 bord_exterieur
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 1 17 EntiteGeometrique
+17 EntiteGeometrique
+11 Version 3.0
+9 bord_trou
+22 Mode=eModeUtiliseLieux
+1 0 0 0 0 0 0 0 0 2 17 EntiteGeometrique
+22 ListEntitesGeometrique

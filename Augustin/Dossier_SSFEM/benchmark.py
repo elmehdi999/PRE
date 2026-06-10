@@ -5,7 +5,6 @@ import sys
 import re
 import matplotlib.pyplot as plt
 
-# Configuration des grilles de test
 ordres_p = [1, 2, 3]
 termes_kl = [1, 2, 5, 10, 14]
 frequences_rff = [10, 50, 100, 150, 200, 250, 300, 350]
@@ -39,9 +38,9 @@ def executer_simulation(script_name, param_stochastique, ordre_p):
 
 fichier_csv = "resultats_benchmark.csv"
 
-# ==========================================
+
 # 1. PHASE DE CALCUL ET SAUVEGARDE CSV
-# ==========================================
+
 with open(fichier_csv, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["Methode", "Dimension_Stochastique", "Ordre_PC", "Temps_Secondes", "Erreur_Max", "Statut"])
@@ -79,9 +78,9 @@ with open(fichier_csv, "w", newline="") as f:
 
 print("\nCalculs terminés. Génération des graphiques...")
 
-# ==========================================
+
 # 2. PHASE DE POST-TRAITEMENT ET VISUALISATION
-# ==========================================
+
 data_kl = {1: {"dim": [], "temps": [], "err": []}, 2: {"dim": [], "temps": [], "err": []}, 3: {"dim": [], "temps": [], "err": []}}
 data_rff = {1: {"dim": [], "temps": [], "err": []}, 2: {"dim": [], "temps": [], "err": []}, 3: {"dim": [], "temps": [], "err": []}}
 
@@ -94,7 +93,7 @@ with open(fichier_csv, "r") as f:
                 dim = int(row["Dimension_Stochastique"])
                 p = int(row["Ordre_PC"])
                 t = float(row["Temps_Secondes"])
-                err = float(row["Erreur_Max"]) # C'est ici que ça plantait avec le texte
+                err = float(row["Erreur_Max"])
                 
                 if methode == "KL":
                     data_kl[p]["dim"].append(dim)
@@ -108,7 +107,7 @@ with open(fichier_csv, "r") as f:
                 print(f"Ligne ignorée pour le tracé ({methode}, param={dim}) : Erreur non lisible '{row['Erreur_Max']}'")
                 continue
 
-# --- Figure 1 : Temps d'exécution ---
+# Figure 1 : Temps d'exécution
 plt.figure(figsize=(12, 6))
 colors = {1: 'blue', 2: 'green', 3: 'red'}
 lignes_tracees = 0
@@ -134,7 +133,7 @@ if lignes_tracees > 0:
 else:
     print("ATTENTION: Aucune donnée de temps valide pour tracer le graphique.")
 
-# --- Figure 2 : Erreur Maximale ---
+# Figure 2 : Erreur Maximale
 plt.figure(figsize=(12, 6))
 lignes_tracees_err = 0
 
