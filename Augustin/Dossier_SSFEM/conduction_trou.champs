@@ -1,6 +1,11 @@
-// +************************************************************************
-// --- Logiciel MEF++ - Problème stochastique RFF sur plaque trouée
-// +************************************************************************
+//+************************************************************************
+// --- Logiciel MEF++
+// ---
+// --- Copyright 1996-2018 GIREF, Université Laval
+// --- TOUS DROITS RÉSERVÉS
+// --- ALL RIGHTS RESERVED
+// ---
+//+************************************************************************
 booleen GIREF_AJOUTE_PILE_APPEL_ERMSG false
 booleen GIREF_VERBOSE_SOLVEUR false
 booleen GIREF_MODE_VERBOSE_CHRONO 0
@@ -8,8 +13,9 @@ booleen GIREF_COMPILE_EXPALG false
 booleen GIREF_MAPLE_OPTIMISE_EXPALG false
 
 ################################################################################
-# 1. LECTURE ET CONVERSION DU NOUVEAU MAILLAGE GMSH
+# 1. GÉOMÉTRIE ET MAILLAGE
 ################################################################################
+# On appelle ton nouveau maillage de la plaque trouée
 convertisseurversgiref conduction_trou [plaque_trouee.msh,MSH,2,Lin]
 
 champgeolin champgeo
@@ -20,9 +26,10 @@ problemeef ProbFactice2
 problemeef ProbFactice3
 
 ################################################################################
-# 2. DÉCLARATION DES CHAMPS ET VARIABLES
+# 2. DÉCLARATION DES CHAMPS ET VARIABLES (Identique à l'ancien)
 ################################################################################
 scallin T        0
+scallin T_exacte_scallin 0
 scallin T_exporte 1
 scallin test 1
 
@@ -34,39 +41,47 @@ scallin F3 0
 scalaire K_intermediaire 1  
 scalconstelem K 1
 
-# --- VARIABLES RFF INJECTÉES PAR PYTHON ---
-scalaire omega_x 0
-scalaire omega_y 0
-scalaire phase_rff 0
+# Comme on n'a plus de solution analytique pour ce problème complexe, on la met à 0
+# pour éviter que le script Python ne plante quand il la cherche !
+scalaire T_exacte 0
 
-# Définition analytique de l'onde de conductivité RFF
-# MEF++ évalue directement les coordonnées spatiales globales x et y du maillage
-scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y, phase_rff) = K_intermediaire * cos(omega_x * x + omega_y * y + phase_rff)
+# Variables de la méthode RFF (fréquences spatiales)
+scalaire omega_x 0.0
+scalaire omega_y 0.0
+scalaire phase_rff 0.0
+
+# Termes pour la formulation trigonométrique RFF
+scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y, phase_rff)=K_intermediaire*cos(omega_x*x + omega_y*y + phase_rff)      
 
 to2sym Z [0,0,0,0,0,0]
 
-# Structures d'échange pour PETSc et Python
+# Paramètres d'importation vers Python
 vecteur T_imp [ProbDida, "colonne"]
+vecteur T_exacte_vec [ProbDida, "colonne"]
 vecteur K_imp [ProbFactice, "colonne"]
 vecteur F_imp [ProbFactice2, "colonne"]
+
+scalquad X 0
 
 { options_prefixees_petsc MatK
   mat_type aij
 }
-matrice MatK        [ProbDida]
-matrice MatKbis     [ProbDida]
-vecteur Residu      [ProbDida, "colonne"]
-vecteur Residu2     [ProbDida, "ligne"]
+matrice MatK       [ProbDida]
+matrice MatKbis    [ProbDida]
+vecteur Residu     [ProbDida, "colonne"]
+vecteur Residu2    [ProbDida, "ligne"]
 
 ################################################################################
-# 3. CONFIGURATION DES EXPORTATIONS PARAVIEW (VTK)
+# 3. EXPORTATIONS PARAVIEW (Identique à l'ancien)
 ################################################################################
-{exportation       export_TK
+{exportation              export_TK
     format_exportation VTK
     asgnDegreInterpolation Exportation::eMAILLAGE_LINEAIRE
     asgnExporteToujoursMaillage faux
     ajouteChamp   T
     ajouteChamp   K
+    ajouteChamp T_exacte
+    ajouteChamp F
     prefixe_sorties $CheminAccesExport$/resultat
 }
 pp_exportation exportation_TK [export_TK, "resultats/T_resultat_ssfem",2,true,false,false,false]
@@ -74,16 +89,19 @@ pp_exportation exportation_TK [export_TK, "resultats/T_resultat_ssfem",2,true,fa
 {exportation        T_ssfem
     format_exportation VTK
     ajouteChamp T_exporte
+    ajouteChamp T_exacte
     prefixe_sorties $CheminAccesExport$/resultat
 }
 
 ################################################################################
-# 4. OPÉRATEURS DE PRÉ-POST TRAITEMENT (PP)
+# 4. OPÉRATEURS DE PRÉ-POST TRAITEMENT (Identique à l'ancien)
 ################################################################################
 pp_reinterpole pp_interpoleK [K, K_intermediaire2] 
+pp_reinterpole pp_interpoleTexacte [T_exacte_scallin, T_exacte]
 pp_reinterpole pp_interpoleF [F, F_intermediaire]
 
 pp_copie_champ_dans_vecteur pp_copie_T_imp [T,T_imp,T]
+pp_copie_champ_dans_vecteur pp_copie_Texacte_vec [T_exacte_scallin, T_exacte_vec, T]
 pp_copie_champ_dans_vecteur pp_copie_K_imp [K,K_imp,K]
 pp_copie_champ_dans_vecteur pp_copie_F_imp [F, F_imp, F]
 
@@ -122,19 +140,22 @@ schemaintg schema_intg ParamSchema
 pp_resolution_probleme resolution [ProbDida,Solveur(ProbDida)]
 
 ################################################################################
-# 5. FORMULATION FAIBLE ET CONDITIONS AUX LIMITES COMPLEXES
+# 5. FORMULATION FAIBLE ET CONDITIONS AUX LIMITES DE LA PLAQUE TROUÉE
 ################################################################################
 { ProbDida
   tfdiffusiondiffusivite1d    TFDiffT [champgeo, T, T, K, schema_intg]
   TFSourceFVScal TFSrcF  [champgeo, F, T,    schema_intg]
 
-  # Définition des températures imposées
-  scalaire T_chaud 100.0
-  scalaire T_froid 0.0
-
-  # Application sur les labels physiques définis dans ton fichier .geo de Gmsh
-  dirichlet scalaire "bord_trou" "T" "T_chaud" 
-  dirichlet scalaire "bord_exterieur" "T" "T_froid" 
+  # La température est ancrée à 0 sur l'extérieur
+  scalaire cond_ext   0.0
+  # On injecte une puissance thermique de 100 W/m² dans le trou
+  scalaire flux_trou  100.0
+  
+  # L'extérieur dissipe la chaleur (ancrage = pas de matrice singulière)
+  dirichlet scalaire "bord_exterieur" "T" "cond_ext"
+  
+  # Le trou chauffe (Neumann = pas de bug de pénalisation dans la matrice K)
+  neumann scalaire "bord_trou" "T" "flux_trou" "schema_intg"
 
   ajoute_pp [exportation_TK,FinPasDeTemps]
 }
@@ -150,4 +171,5 @@ pp_resolution_probleme resolution [ProbDida,Solveur(ProbDida)]
 }
 
 { Actions
+Solveur(ProbDida)
 }

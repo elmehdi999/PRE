@@ -291,4 +291,4 @@ if len(sys.argv) == 3:
     
     T = a.resolution_lineaire()
     a.exportation()
-    a.test_ks(100,64)
+    a.test_ks(100,500)
