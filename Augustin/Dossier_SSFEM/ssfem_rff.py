@@ -60,12 +60,12 @@ class ssfem:
         
         # Tirage des fréquences spatiales (D lignes, 2 colonnes)
         self.w = np.random.normal(0, 1.0/l_corr, (D, 2))
-        facteur_norm = 0.15 / np.sqrt(D)
+        facteur_norm = 0.15 * np.sqrt(2.0 / D)
         
         # Apport déterministe
         self.pp_assemblageMatEtRes.execute()
         self.l_matK.append(self.matK.copy())
-        self.matK.copy(result=self.l_matK[-1])
+        #self.matK.copy(result=self.l_matK[-1]) inutile
         
         if self.ordreKL == 0:
             print("Pas d'expansion stochastique")
@@ -236,7 +236,8 @@ class ssfem:
         if os.path.exists("vraie_solution_mc.npy"):
             T_mc = np.load("vraie_solution_mc.npy")
             vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
-            vec_exact.setArray(T_mc)
+            indices = np.arange(len(T_mc), dtype=np.int32)
+            vec_exact.setValues(indices, T_mc)
             vec_exact.assemble()
             self.gfc.reqPP("pp_visu_Texacte").execute()
             
@@ -351,7 +352,6 @@ class ssfem:
             return None
         
         liste_echantillon = self.mc(taille_echantillon,position,False)
-        moyenne = np.mean(liste_echantillon)
         variance = np.var(liste_echantillon)
         moyenne = self.T_assemble.getNestSubVecs()[0].getValues(position)
         print(f"Moyenne : {moyenne}, Variance : {variance}")
@@ -386,4 +386,4 @@ if len(sys.argv) == 3:
     
     # 5. OPTIONNEL : À désélectionner (en enlevant le #) la première fois 
     # pour générer ton fichier de référence 'vraie_solution_mc.npy'
-    #a.mc_reference(10000)
+    #a.mc_reference(1000)
