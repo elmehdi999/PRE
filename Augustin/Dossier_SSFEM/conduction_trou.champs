@@ -72,7 +72,7 @@ vecteur Residu     [ProbDida, "colonne"]
 vecteur Residu2    [ProbDida, "ligne"]
 
 ################################################################################
-# 3. EXPORTATIONS PARAVIEW (Identique à l'ancien)
+# 3. EXPORTATIONS PARAVIEW
 ################################################################################
 {exportation              export_TK
     format_exportation VTK
@@ -80,7 +80,7 @@ vecteur Residu2    [ProbDida, "ligne"]
     asgnExporteToujoursMaillage faux
     ajouteChamp   T
     ajouteChamp   K
-    ajouteChamp T_exacte
+    ajouteChamp T_exacte_scallin
     ajouteChamp F
     prefixe_sorties $CheminAccesExport$/resultat
 }
@@ -89,12 +89,12 @@ pp_exportation exportation_TK [export_TK, "resultats/T_resultat_ssfem",2,true,fa
 {exportation        T_ssfem
     format_exportation VTK
     ajouteChamp T_exporte
-    ajouteChamp T_exacte
+    ajouteChamp T_exacte_scallin
     prefixe_sorties $CheminAccesExport$/resultat
 }
 
 ################################################################################
-# 4. OPÉRATEURS DE PRÉ-POST TRAITEMENT (Identique à l'ancien)
+# 4. OPÉRATEURS DE PRÉ-POST TRAITEMENT
 ################################################################################
 pp_reinterpole pp_interpoleK [K, K_intermediaire2] 
 pp_reinterpole pp_interpoleTexacte [T_exacte_scallin, T_exacte]
@@ -106,6 +106,7 @@ pp_copie_champ_dans_vecteur pp_copie_K_imp [K,K_imp,K]
 pp_copie_champ_dans_vecteur pp_copie_F_imp [F, F_imp, F]
 
 pp_copie_vecteur_dans_champs pp_visualisation_T    [T_imp, T_exporte, T]
+pp_copie_vecteur_dans_champs pp_visu_Texacte [T_exacte_vec, T_exacte_scallin, T]
 
 pp_assemble ppAssMatK     [ProbDida,MatK]
 pp_assemble ppAssRes      [ProbDida, Residu]
