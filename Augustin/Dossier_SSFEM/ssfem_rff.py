@@ -34,7 +34,7 @@ class ssfem:
         gfc = corps.reqGFC()
         self.gfc = gfc
 
-        # 2. PRISE EN CHARGE RFF : On récupère les "télécommandes" pointant vers la mémoire C++
+        # 2. PRISE EN CHARGE RFF : On recupere les "telecommandes" pointant vers la memoire C++
         self.champ_wx = gfc.reqChamp("omega_x")
         self.champ_wy = gfc.reqChamp("omega_y")
         self.champ_phase = gfc.reqChamp("phase_rff") # NOUVEAU
@@ -46,23 +46,23 @@ class ssfem:
 
         self.l_matK = []
         
-        print("Récupération des pre-post traitements")                        
+        print("Recuperation des pre-post traitements")                        
         self.pp_resolution = gfc.reqPP("resolution")
         self.pp_assemblageMatEtRes = gfc.reqPP("ppAssMatEtRes")
-        self.pp_reinterpole = gfc.reqPP("pp_interpoleK") # Le "_0" a été supprimé car on a un seul outil dynamique
+        self.pp_reinterpole = gfc.reqPP("pp_interpoleK") # Le "_0" a ete supprime car on a un seul outil dynamique
 
     def assemblage_premier(self):
         """
-        Génération RFF et assemblage des matrices
+        Generation RFF et assemblage des matrices
         """
         D = self.D_rff 
         l_corr = 0.12
         
-        # Tirage des fréquences spatiales (D lignes, 2 colonnes)
+        # Tirage des frequences spatiales (D lignes, 2 colonnes)
         self.w = np.random.normal(0, 1.0/l_corr, (D, 2))
         facteur_norm = 0.15 * np.sqrt(2.0 / D)
         
-        # Apport déterministe
+        # Apport deterministe
         self.pp_assemblageMatEtRes.execute()
         self.l_matK.append(self.matK.copy())
         #self.matK.copy(result=self.l_matK[-1]) inutile
@@ -73,7 +73,7 @@ class ssfem:
             
         # Apport stochastique RFF
         for j in range(D):
-            # On injecte les nouvelles fréquences
+            # On injecte les nouvelles frequences
             self.champ_wx.asgnValeur(float(self.w[j, 0]))
             self.champ_wy.asgnValeur(float(self.w[j, 1]))
             
@@ -119,7 +119,7 @@ class ssfem:
 
     def assemblage_F(self):
         N = self.residu.getSize()
-        self.pp_resolution.execute()
+        # SUPPRESSION de self.pp_resolution.execute() pour proteger le vecteur force !
         liste_construction = [self.residu]
 
         for i in range(self.ordrePC):
@@ -161,27 +161,27 @@ class ssfem:
             ksp.solve(self.F_assemble, self.T_assemble)
 
             if ksp.is_converged:
-                print(f"convergence en {ksp.getIterationNumber()} itérations")
-                print(f"Résidu final : {ksp.getResidualNorm()}")
+                print(f"convergence en {ksp.getIterationNumber()} iterations")
+                print(f"Residu final : {ksp.getResidualNorm()}")
             else:
-                print("La résolution n'a pas convergé")
-                print(f"Résidu final : {ksp.getResidualNorm()}")
+                print("La resolution n'a pas converge")
+                print(f"Residu final : {ksp.getResidualNorm()}")
                 
             try:
                 import numpy as np
                 import os
                 
-                # 1. Extraction de la moyenne calculée par SSFEM (Mode 0 du Chaos)
+                # 1. Extraction de la moyenne calculee par SSFEM (Mode 0 du Chaos)
                 T0 = self.T_assemble.getNestSubVecs()[0]
                 valeurs_T0 = np.array(T0.getArray())
                 
-                # 2. Chargement du fichier de référence généré par Monte Carlo
+                # 2. Chargement du fichier de reference genere par Monte Carlo
                 fichier_ref = "vraie_solution_mc.npy"
                 
                 if os.path.exists(fichier_ref):
                     valeurs_exactes = np.load(fichier_ref)
                     
-                    # 3. Calcul de l'erreur maximale par rapport à cette référence
+                    # 3. Calcul de l'erreur maximale par rapport à cette reference
                     if len(valeurs_exactes) == len(valeurs_T0):
                         erreur_max = float(np.max(np.abs(valeurs_T0 - valeurs_exactes)))
                         print(f"RESULTAT_BENCHMARK_ERREUR={erreur_max}")
@@ -196,7 +196,7 @@ class ssfem:
                 print(f"RESULTAT_BENCHMARK_ERREUR=BUG_{err_name}_{err_msg}")
                 
         except PETSc.Error as e:
-            print(f"Erreur lors de la résolution : {e}")
+            print(f"Erreur lors de la resolution : {e}")
             
         return self.T_assemble
 
@@ -211,16 +211,20 @@ class ssfem:
         T0.copy(result=self.realisation)
         self.realisation.assemble()
         
-        liste_tirage = [rd.normal(0,1,dim) for j in range(self.ordrePC)]
-        liste_psi_j = p_chaos.eval_pc_basis(self.ordrePC, dim, liste_tirage)
-        for j in range(1,self.ordrePC+1):
+        # CORRECTION DU FORMAT : On cree un SEUL tirage global...
+        tirage_global = rd.normal(0, 1, dim)
+        # ... mais on le copie "ordrePC" fois dans une liste pour satisfaire la fonction eval_pc_basis
+        liste_tirage_formatee = [tirage_global for _ in range(self.ordrePC)]
+        
+        liste_psi_j = p_chaos.eval_pc_basis(self.ordrePC, dim, liste_tirage_formatee)
+        
+        for j in range(1, self.ordrePC + 1):
             Tj = self.T_assemble.getNestSubVecs()[j]
             temp = Tj.duplicate()
             Tj.copy(result=temp)
             temp.scale(liste_psi_j[j-1])
-            self.realisation.axpy(1.0,temp)
+            self.realisation.axpy(1.0, temp)
             self.realisation.assemble()
-            self.realisation.view()
         
         return self.realisation
 
@@ -246,32 +250,32 @@ class ssfem:
         pp_exporte = self.gfc.reqPP("exportation_T")
         pp_copie_Timp.execute()
         pp_exporte.execute()
-        print("Exportation executée")
+        print("Exportation executee")
         
     def exporter_statistiques(self):
         """Calcule et exporte la Moyenne (T0) et la Variance totale sur ParaView"""
         print("Calcul et exportation de la Moyenne et de la Variance...")
         
-        # 1. L'Espérance (Moyenne T0)
+        # 1. L'Esperance (Moyenne T0)
         T0 = self.T_assemble.getNestSubVecs()[0]
         self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec()
         T0.copy(result=self.T_imp)
         self.T_imp.assemble()
         
-        # On renomme l'export pour ParaView et on l'exécute
+        # On renomme l'export pour ParaView et on l'execute
         self.gfc.lireLigne(f"""pp_exportation exp_mean [T_ssfem, "resultats/T_Moyenne",0,true,false,false,false]""")
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_mean").execute()
         
         # 2. La Variance (Somme des Tj^2)
         T_var = T0.duplicate()
-        T_var.set(0.0) # On initialise à zéro
+        T_var.set(0.0) # On initialise à zero
         temp = T0.duplicate()
         
         # On boucle sur tous les modes stochastiques (de 1 jusqu'à P)
         for j in range(1, self.ordrePC + 1):
             Tj = self.T_assemble.getNestSubVecs()[j]
-            temp.pointwiseMult(Tj, Tj) # temp = Tj * Tj (Élévation au carré élément par élément)
+            temp.pointwiseMult(Tj, Tj) # temp = Tj * Tj (elevation au carre element par element)
             T_var.axpy(1.0, temp)      # Ajout à la variance totale
             
         T_var.assemble()
@@ -282,15 +286,15 @@ class ssfem:
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_var").execute()
         
-        print("Moyenne et Variance exportées avec succès ! Ouvre ParaView.")
+        print("Moyenne et Variance exportees avec succes ! Ouvre ParaView.")
 
     def mc_reference(self, n_mc=10000):
-        """Méthode de Monte Carlo classique pour générer la Vraie Solution"""
+        """Methode de Monte Carlo classique pour generer la Vraie Solution"""
         if not self.l_matK:
             print("Erreur : Assemble les matrices RFF d'abord !")
             return None
             
-        print(f"--- Démarrage du Monte Carlo de Référence ({n_mc} itérations) ---")
+        print(f"--- Demarrage du Monte Carlo de Reference ({n_mc} iterations) ---")
         N = self.matK.getSize()
         T_mean = np.zeros(N[0])
         
@@ -315,11 +319,11 @@ class ssfem:
             T_mean += np.array(vec_T.getArray())
             
             if (i+1) % 100 == 0:
-                print(f"Itération MC brute force : {i+1}/{n_mc}")
+                print(f"Iteration MC brute force : {i+1}/{n_mc}")
                 
         T_mean /= n_mc
         np.save("vraie_solution_mc.npy", T_mean)
-        print("Terminé ! La Vraie Solution est sauvegardée dans 'vraie_solution_mc.npy'")
+        print("Termine ! La Vraie Solution est sauvegardee dans 'vraie_solution_mc.npy'")
         return T_mean
 
     def finalise(self):
@@ -328,7 +332,7 @@ class ssfem:
 
     def mc(self,n_mc,position,affichage=True):
         if self.T_assemble is None:
-            print("Exécuter la résolution linéaire d'abord")
+            print("Executer la resolution lineaire d'abord")
             return None
         
         liste_realisation = []
@@ -339,7 +343,7 @@ class ssfem:
         if affichage:
             plt.hist(liste_realisation, bins=30, color='blue')
             plt.xlabel("Valeurs de T")
-            plt.ylabel("Densité de probabilité")
+            plt.ylabel("Densite de probabilite")
             plt.title(f"Histogramme de Monte Carlo pour T à la position {position}")
             plt.grid()
             plt.savefig(f"mc_histo_{position}_kl{self.ordreKL}_pc{self.ordrePC}.png")
@@ -348,7 +352,7 @@ class ssfem:
 
     def test_ks(self,taille_echantillon, position):
         if self.T_assemble is None:
-            print("Exécuter la résolution linéaire d'abord")
+            print("Executer la resolution lineaire d'abord")
             return None
         
         liste_echantillon = self.mc(taille_echantillon,position,False)
@@ -362,7 +366,7 @@ class ssfem:
         test_ks.affichage()
 
 ######################  
-# Exemple d'utilisation
+# exemple d'utilisation
 ######################
 if len(sys.argv) == 3:
     a = ssfem(int(sys.argv[1]), int(sys.argv[2]))
@@ -372,18 +376,18 @@ if len(sys.argv) == 3:
     a.assemblage_F()
     a.construction_T()
     
-    # 1. Résolution du Chaos Polynomial (RFF)
+    # 1. resolution du chaos polynomial (RFF)
     T = a.resolution_lineaire()
     
-    # 2. Exportation d'une réalisation classique (ce que tu as fait pour tes photos)
+    # 2. exportation d'une realisation classique
     a.exportation()
     
-    # 3. NOUVEAU : Exporte les cartes lisses de la Moyenne et de la Variance
+    # 3. exporte les cartes lisses de la moyenne et la variance
     a.exporter_statistiques()
     
-    # 4. Ton test statistique sur le nœud 500
+    # 4. test statistique sur le noeud 500
     a.test_ks(100, 500)
     
-    # 5. OPTIONNEL : À désélectionner (en enlevant le #) la première fois 
-    # pour générer ton fichier de référence 'vraie_solution_mc.npy'
-    #a.mc_reference(1000)
+    # 5. a deselectionner (en enlevant le #) la premiere fois 
+    # pour generer le fichier de reference 'vraie_solution_mc.npy'
+    #a.mc_reference(10000)
