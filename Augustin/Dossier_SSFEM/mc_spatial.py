@@ -47,7 +47,7 @@ def monte_carlo_spatial(n_mc=1000):
     residu.assemble()
     
     for i in range(n_mc):
-        bruit = rd.normal(0, 0.3, N_elements)
+        bruit = rd.normal(0, 0.01, N_elements)
         indices = np.arange(N_elements, dtype=np.int32)
         vec_bruit.setValues(indices, bruit)
         vec_bruit.assemble()
