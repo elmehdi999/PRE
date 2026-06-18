@@ -207,4 +207,3 @@ def eval_pc_basis(nb_terms, dim, x):
         alpha = alpha_gras(dim, i+1)
         values[i] = multi_hermite_poly(alpha,x[i])
     return values
-

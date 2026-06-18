@@ -1,5 +1,5 @@
 ########################################################################################################
-# Code SSFEM conduction thermique 2D - Version Benchmark Spatial Corrigée
+# Code SSFEM conduction thermique 2D
 # Auteur: El Mehdi EN-NAHAS 
 ########################################################################################################
 
@@ -22,21 +22,18 @@ class ssfem:
         self.ordreKL = 2 * D_rff  # d = 2D (cos + sin)
         self.ordrePC = ordrePC
         
-        # ÉTAPE 3 : Calcul de la vraie taille de la base P_total (et non ordrePC)
+        # calcul de la vraie taille de la base P_total (et non ordrePC)
         self.P_total = math.comb(self.ordreKL + self.ordrePC, self.ordreKL)
         
-        print("\n==============================================")
         print(f"Dimension stochastique (d) : {self.ordreKL}")
         print(f"Ordre du Chaos (P)         : {self.ordrePC}")
         print(f"Taille de la base (P_total): {self.P_total}")
-        print("==============================================\n")
         
         if self.P_total > 500:
-            print("ATTENTION CRITIQUE : P_total est gigantesque !")
-            print("La matrice bloc va exploser la memoire du cluster.")
-            print("Pour tester SSFEM, vous DEVEZ reduire D_rff (ex: 2, 3 ou 4).\n")
+            print("ATTENTION : P_total est gigantesque")
+            print("Pour tester SSFEM, vous deviez reduire D_rff (ex: 2, 3 ou 4)\n")
         
-        # Initialisation
+        # initialisation
         prefixe = "conduction_trou"
         petsc4py.init(sys.argv)
         mefpp.initialise(prefixe)
@@ -46,7 +43,7 @@ class ssfem:
         corps=collection.reqCorps(prefixe)
         self.gfc = corps.reqGFC()
 
-        # PRISE EN CHARGE RFF
+        # RFF
         self.champ_wx = self.gfc.reqChamp("omega_x")
         self.champ_wy = self.gfc.reqChamp("omega_y")
         self.champ_phase = self.gfc.reqChamp("phase_rff")
@@ -58,18 +55,18 @@ class ssfem:
 
         self.l_matK = []
         
-        print("Récupération des pre-post traitements")                        
+        print("Recuperation des pre-post traitements")                        
         self.pp_resolution = self.gfc.reqPP("resolution")
         self.pp_assemblageMatEtRes = self.gfc.reqPP("ppAssMatEtRes")
         self.pp_reinterpole = self.gfc.reqPP("pp_interpoleK")
 
     def assemblage_premier(self):
-        # ÉTAPE 1 : Génération du champ RFF
+        # generation du champ RFF
         D = self.D_rff 
         l_corr = 0.12
         self.w = np.random.normal(0, 1.0/l_corr, (D, 2))
         
-        # Variance de 8% pour éviter les crashs thermiques
+        # variance de 8%
         facteur_norm = 0.08 * np.sqrt(1.0 / D)
         
         self.pp_assemblageMatEtRes.execute()
@@ -82,7 +79,7 @@ class ssfem:
             self.champ_wx.asgnValeur(float(self.w[j, 0]))
             self.champ_wy.asgnValeur(float(self.w[j, 1]))
             
-            # MATRICE COSINUS
+            # MATRICE COS
             self.champ_phase.asgnValeur(0.0)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
@@ -91,7 +88,7 @@ class ssfem:
             mat_cos.scale(facteur_norm)
             self.l_matK.append(mat_cos)
             
-            # MATRICE SINUS
+            # MATRICE SIN
             self.champ_phase.asgnValeur(-np.pi / 2.0)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
@@ -101,7 +98,7 @@ class ssfem:
             self.l_matK.append(mat_sin)
               
     def assemblage_second(self):
-        # ÉTAPE 4 : Assemblage K_jk
+        # assemblage K_jk
         dim = self.ordreKL
         self.K_jk = [[None for _ in range(self.P_total)] for _ in range(self.P_total)]
         
@@ -112,7 +109,7 @@ class ssfem:
                 
                 for i in range(dim+1):
                     coeff = p_chaos.calcul_cijk(i,j,k,dim+1)
-                    if abs(coeff) > 1e-12: # Optimisation énorme (on ignore les 0)
+                    if abs(coeff) > 1e-12: # Optimisation enorme
                         temp = self.l_matK[i].duplicate()
                         self.l_matK[i].copy(result=temp)
                         temp.scale(coeff)
@@ -152,7 +149,7 @@ class ssfem:
         self.T_assemble.assemble()
 
     def resolution_lineaire(self):
-        # ÉTAPE 5 : Résolution système linéaire par blocs
+        # Resolution système lineaire par blocs
         ksp = PETSc.KSP().create()
         ksp.setOperators(self.K_assemble)
         ksp.setTolerances(atol=1e-20, rtol=1e-12, divtol=1e30, max_it=4000)
@@ -190,27 +187,48 @@ class ssfem:
             
         return self.T_assemble
 
-    def exporter_statistiques(self):
-        """Calcule et exporte la Moyenne (T0) et la Variance totale"""
-        print("Calcul et exportation de la Moyenne, de la Variance et du Vrai MC...")
-        
-        # --- INJECTION DE LA VRAIE SOLUTION SPATIALE (MONTE CARLO) ---
+    def injecter_mc_paraview(self):
+        """Fonction centralisee pour charger et injecter le Monte Carlo dans MEF++"""
         fichier_ref = "vraie_solution_mc_spatial.npy"
         if os.path.exists(fichier_ref):
             T_mc = np.load(fichier_ref)
             vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
             
-            # Injection sécurisée et forcée dans PETSc
-            indices = np.arange(len(T_mc), dtype=np.int32)
-            vec_exact.setValues(indices, T_mc)
+            # injection securisee
+            vec_temp = PETSc.Vec().createSeq(len(T_mc))
+            vec_temp.setUp()
+            vec_temp.setArray(T_mc)
+            vec_temp.assemble()
+            vec_temp.copy(result=vec_exact)
             vec_exact.assemble()
             
-            # On force MEF++ à mettre à jour le champ géométrique T_exacte_scallin
             self.gfc.reqPP("pp_visu_Texacte").execute()
         else:
             print(f"ATTENTION: Fichier {fichier_ref} introuvable.")
 
-        # --- ÉTAPE 6 : EXPORT MOYENNE ---
+    def exportation(self):
+        """Exporte une realisation aleatoire de la plaque"""
+        self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec() 
+        self.realiser().copy(result=self.T_imp)
+        self.T_imp.assemble()
+        
+        # on injecte la vraie solution spatiale ici aussi
+        self.injecter_mc_paraview()
+            
+        nom_fichier = f"resultats/T_realisation_({self.D_rff},{self.ordrePC})"
+        self.gfc.lireLigne(f"""pp_exportation exportation_T [T_ssfem, "{nom_fichier}",0,true,false,false,false]""")
+        self.gfc.reqPP("pp_visualisation_T").execute()
+        self.gfc.reqPP("exportation_T").execute()
+        print(f"Exportation Realisation : {nom_fichier}.vtu cree.")
+
+    def exporter_statistiques(self):
+        """Calcule et exporte la Moyenne (T0) et la Variance totale"""
+        print("Calcul et exportation de la Moyenne, de la Variance et du Vrai MC...")
+        
+        # on reinjecte pour s'assurer que c'est bien present dans les exports suivants
+        self.injecter_mc_paraview()
+
+        # on exporte la moyenne
         T0 = self.T_assemble.getNestSubVecs()[0]
         self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec()
         T0.copy(result=self.T_imp)
@@ -220,8 +238,9 @@ class ssfem:
         self.gfc.lireLigne(f"""pp_exportation exp_mean [T_ssfem, "{nom_fichier_moyenne}",0,true,false,false,false]""")
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_mean").execute()
+        print(f"Exportation Moyenne : {nom_fichier_moyenne}.vtu cree.")
         
-        # --- ÉTAPE 7 : EXPORT VARIANCE AVEC NORMALISATION E[Psi_j^2] ---
+        # on exporte la variance (avec normalisation E[psi_j^2])
         T_var = T0.duplicate()
         T_var.set(0.0)
         temp = T0.duplicate()
@@ -231,7 +250,7 @@ class ssfem:
             Tj = self.T_assemble.getNestSubVecs()[j]
             temp.pointwiseMult(Tj, Tj) 
             
-            # CORRECTION : Multiplication par la norme E[Psi_j^2] (c_0jj)
+            # multiplication par la norme E[Psi_j^2] (c_0jj)
             norm_j = p_chaos.calcul_cijk(0, j, j, dim + 1)
             T_var.axpy(norm_j, temp)
             
@@ -243,30 +262,25 @@ class ssfem:
         self.gfc.lireLigne(f"""pp_exportation exp_var [T_ssfem, "{nom_fichier_variance}",0,true,false,false,false]""")
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_var").execute()
-        
-        print(f"Fichiers exportes avec succes ! Ouvre ParaView.")
+        print(f"Exportation Variance : {nom_fichier_variance}.vtu cree.")
 
-    # --- ÉTAPE 8 : VALIDATION STATISTIQUE KS + MONTE CARLO ---
+    # validation KS + MC
     def realiser(self):
-        # CORRECTION MAJEURE : On génère une VRAIE réalisation physique
-        # (Résolution de K(xi)*T = F) pour contourner le bug de eval_pc_basis
+        # generation d'une vraie realisation physique pour contourner eval_pc_basis
         N = self.matK.getSize()
         dim = self.ordreKL 
 
         self.realisation = PETSc.Vec().createSeq(N)
         self.realisation.setUp()
 
-        # Tirage d'un aléa physique
         xi = rd.normal(0, 1, dim)
         
-        # Assemblage de K_realisation = K0 + sum(xi * Ki)
         K_realisation = self.l_matK[0].duplicate()
         self.l_matK[0].copy(result=K_realisation)
         for j in range(dim):
             K_realisation.axpy(xi[j], self.l_matK[j+1])
         K_realisation.assemble()
         
-        # Résolution physique stricte
         ksp_mc = PETSc.KSP().create()
         ksp_mc.setOperators(K_realisation)
         ksp_mc.setType('preonly')
@@ -303,24 +317,12 @@ class ssfem:
         liste_echantillon = self.mc(taille_echantillon, position, False)
         variance = np.var(liste_echantillon)
         moyenne = self.T_assemble.getNestSubVecs()[0].getValues(position)
-        print(f"Moyenne SSFEM : {moyenne}, Variance Echantillon : {variance}")
+        print(f"Moyenne SSFEM : {moyenne:.4f}, Variance Echantillon : {variance:.4f}")
         
         test_ks = ks_stat.ks(taille_echantillon, moyenne, variance)
         test_ks.setter_echantillon(liste_echantillon)
         calcul = test_ks.kstest()
         test_ks.affichage()
-
-    def exportation(self):
-        """1. Exporte une realisation aleatoire de la plaque"""
-        self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec() 
-        self.realiser().copy(result=self.T_imp)
-        self.T_imp.assemble()
-            
-        nom_fichier = f"resultats/T_realisation_({self.D_rff},{self.ordrePC})"
-        self.gfc.lireLigne(f"""pp_exportation exportation_T [T_ssfem, "{nom_fichier}",0,true,false,false,false]""")
-        self.gfc.reqPP("pp_visualisation_T").execute()
-        self.gfc.reqPP("exportation_T").execute()
-        print(f"Exportation Realisation : {nom_fichier}.vtu cree.")
 
     def finalise(self):
         mefpp.finalise()
@@ -336,13 +338,13 @@ if len(sys.argv) == 3:
     a.construction_T()
     T = a.resolution_lineaire()
     
-    # Exporte la réalisation aléatoire
+    # Exporte la realisation aleatoire
     a.exportation()
     
-    # Exporte Moyenne et Variance avec la Vraie Solution MC injectée
+    # Exporte Moyenne et Variance
     a.exporter_statistiques()
     
-    # Validation statistique (Va générer le graphique KS et l'histogramme)
+    # Validation statistique (Va generer le graphique KS et l'histogramme)
     a.test_ks(100, 500)
     
     a.finalise()
