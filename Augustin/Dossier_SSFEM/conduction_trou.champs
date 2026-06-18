@@ -140,6 +140,33 @@ schemaintg schema_intg ParamSchema
 }
 pp_resolution_probleme resolution [ProbDida,Solveur(ProbDida)]
 
+// =======================================================
+// Nouveaux elements pour le Monte Carlo Spatial
+// =======================================================
+// Memoire pour le bruit
+scalconstelem bruit_blanc 0
+scalconstelem bruit_filtre 0
+scalaire rayon_filtre 0.12
+
+// Probleme dedie pour compter les elements
+problemeef ProbBruit
+{ ProbBruit
+  tfdiffusion Tf_bruit [champgeo, bruit_blanc, bruit_blanc, Z, schema_intg]
+}
+
+vecteur vec_bruit_blanc [ProbBruit, "colonne"]
+
+// 1. Injection
+pp_copie_vecteur_dans_champs pp_import_bruit [vec_bruit_blanc, bruit_blanc, bruit_blanc]
+
+// 2. Le Filtre (Source, Destination, Rayon) !
+pp_filtrage_gaussien applique_filtre_uniforme [bruit_blanc, bruit_filtre, rayon_filtre]
+
+// 3. Application au materiau
+scalaire K_spatial_formule 1.0+bruit_filtre
+pp_reinterpole pp_interpole_K_spatial [K, K_spatial_formule]
+// =======================================================
+
 ################################################################################
 # 5. FORMULATION FAIBLE ET CONDITIONS AUX LIMITES DE LA PLAQUE TROUÉE
 ################################################################################

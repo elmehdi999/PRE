@@ -132,7 +132,7 @@ def calcul_cijk(i,j,k,ordreKL):
     """
     
     alpha_i = alpha_gras(ordreKL,j)
-    print(f"alpha_i : {alpha_i}")
+    #print(f"alpha_i : {alpha_i}")
     beta_i = alpha_gras(ordreKL,k)
     
     if i != 0:

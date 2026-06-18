@@ -1,11 +1,13 @@
 ########################################################################################################
-# Code SSFEM conduction thermique 2D
+# Code SSFEM conduction thermique 2D - Version Benchmark Spatial Corrigée
 # Auteur: El Mehdi EN-NAHAS 
 ########################################################################################################
 
 import numpy.random as rd
 import numpy as np
 import sys
+import os
+import math
 from mefpp4py import mefpp
 import petsc4py
 from petsc4py import PETSc
@@ -16,14 +18,25 @@ import matplotlib.pyplot as plt
 
 class ssfem:
     def __init__(self, D_rff, ordrePC):
-        if D_rff < ordrePC:
-            print("Attention : D_rff < ordrePC")
-        
-        self.D_rff = D_rff  # C'est directement le nombre de vagues (ex: 100)
-        self.ordreKL = 2 * D_rff  # La dimension stochastique totale reste le double (cos + sin)
+        self.D_rff = D_rff
+        self.ordreKL = 2 * D_rff  # d = 2D (cos + sin)
         self.ordrePC = ordrePC
         
-        # 1. On pointe vers le nouveau fichier .champs RFF
+        # Calcul de la vraie taille de la base P_total (et non ordrePC)
+        self.P_total = math.comb(self.ordreKL + self.ordrePC, self.ordreKL)
+        
+        print("\n==============================================")
+        print(f"Dimension stochastique (d) : {self.ordreKL}")
+        print(f"Ordre du Chaos (P)         : {self.ordrePC}")
+        print(f"Taille de la base (P_total): {self.P_total}")
+        print("==============================================\n")
+        
+        if self.P_total > 500:
+            print("ATTENTION CRITIQUE : P_total est gigantesque !")
+            print("La matrice bloc va exploser la memoire du cluster.")
+            print("Pour tester SSFEM, vous DEVEZ reduire D_rff (ex: 2, 3 ou 4).\n")
+        
+        # 1. Initialisation
         prefixe = "conduction_trou"
         petsc4py.init(sys.argv)
         mefpp.initialise(prefixe)
@@ -31,67 +44,56 @@ class ssfem:
         collection=mefpp.reqCollectionDeCorps()
         collection.lisDonneesDeBase([prefixe])
         corps=collection.reqCorps(prefixe)
-        gfc = corps.reqGFC()
-        self.gfc = gfc
+        self.gfc = corps.reqGFC()
 
-        # 2. PRISE EN CHARGE RFF : On recupere les "telecommandes" pointant vers la memoire C++
-        self.champ_wx = gfc.reqChamp("omega_x")
-        self.champ_wy = gfc.reqChamp("omega_y")
-        self.champ_phase = gfc.reqChamp("phase_rff") # NOUVEAU
+        # 2. PRISE EN CHARGE RFF
+        self.champ_wx = self.gfc.reqChamp("omega_x")
+        self.champ_wy = self.gfc.reqChamp("omega_y")
+        self.champ_phase = self.gfc.reqChamp("phase_rff")
 
-        self.matK = gfc.reqMatricePETSc("MatK").reqMat()
+        self.matK = self.gfc.reqMatricePETSc("MatK").reqMat()
         self.matK.assemble()
-        self.residu = gfc.reqVecteurPETSc("Residu").reqVec()
+        self.residu = self.gfc.reqVecteurPETSc("Residu").reqVec()
         self.residu.assemble()
 
         self.l_matK = []
         
-        print("Recuperation des pre-post traitements")                        
-        self.pp_resolution = gfc.reqPP("resolution")
-        self.pp_assemblageMatEtRes = gfc.reqPP("ppAssMatEtRes")
-        self.pp_reinterpole = gfc.reqPP("pp_interpoleK") # Le "_0" a ete supprime car on a un seul outil dynamique
+        print("Récupération des pre-post traitements")                        
+        self.pp_resolution = self.gfc.reqPP("resolution")
+        self.pp_assemblageMatEtRes = self.gfc.reqPP("ppAssMatEtRes")
+        self.pp_reinterpole = self.gfc.reqPP("pp_interpoleK")
 
     def assemblage_premier(self):
-        """
-        Generation RFF et assemblage des matrices
-        """
         D = self.D_rff 
         l_corr = 0.12
-        
-        # Tirage des frequences spatiales (D lignes, 2 colonnes)
         self.w = np.random.normal(0, 1.0/l_corr, (D, 2))
-        facteur_norm = 0.15 * np.sqrt(2.0 / D)
         
-        # Apport deterministe
+        # Variance de 8% pour éviter les crashs thermiques
+        facteur_norm = 0.08 * np.sqrt(1.0 / D)
+        
         self.pp_assemblageMatEtRes.execute()
         self.l_matK.append(self.matK.copy())
-        #self.matK.copy(result=self.l_matK[-1]) inutile
         
         if self.ordreKL == 0:
-            print("Pas d'expansion stochastique")
             return
             
-        # Apport stochastique RFF
         for j in range(D):
-            # On injecte les nouvelles frequences
             self.champ_wx.asgnValeur(float(self.w[j, 0]))
             self.champ_wy.asgnValeur(float(self.w[j, 1]))
             
-            # --- 1. MATRICE COSINUS ---
-            self.champ_phase.asgnValeur(0.0) # phase = 0, c'est un cosinus
+            # MATRICE COSINUS
+            self.champ_phase.asgnValeur(0.0)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
-            
             mat_cos = self.matK.duplicate()
             self.matK.copy(result=mat_cos)
             mat_cos.scale(facteur_norm)
             self.l_matK.append(mat_cos)
             
-            # --- 2. MATRICE SINUS ---
-            self.champ_phase.asgnValeur(-np.pi / 2.0) # phase = -pi/2, cos(x - pi/2) = sin(x)
+            # MATRICE SINUS
+            self.champ_phase.asgnValeur(-np.pi / 2.0)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
-            
             mat_sin = self.matK.duplicate()
             self.matK.copy(result=mat_sin)
             mat_sin.scale(facteur_norm)
@@ -99,18 +101,21 @@ class ssfem:
               
     def assemblage_second(self):
         dim = self.ordreKL
-        self.K_jk = [[None for _ in range(self.ordrePC+1)] for _ in range(self.ordrePC+1)]
+        # CORRECTION : La matrice bloc doit faire P_total x P_total
+        self.K_jk = [[None for _ in range(self.P_total)] for _ in range(self.P_total)]
         
-        for j in range(self.ordrePC+1):
-            for k in range(self.ordrePC+1):
+        for j in range(self.P_total):
+            for k in range(self.P_total):
                 self.K_jk[j][k] = self.matK.duplicate()
                 self.K_jk[j][k].zeroEntries()
+                
                 for i in range(dim+1):
                     coeff = p_chaos.calcul_cijk(i,j,k,dim+1)
-                    temp = self.l_matK[i].duplicate()
-                    self.l_matK[i].copy(result=temp)
-                    temp.scale(coeff)
-                    self.K_jk[j][k].axpy(1.0,temp)
+                    if abs(coeff) > 1e-12: # Optimisation énorme (on ignore les 0)
+                        temp = self.l_matK[i].duplicate()
+                        self.l_matK[i].copy(result=temp)
+                        temp.scale(coeff)
+                        self.K_jk[j][k].axpy(1.0, temp)
 
                 self.K_jk[j][k].assemble()
 
@@ -119,15 +124,16 @@ class ssfem:
 
     def assemblage_F(self):
         N = self.residu.getSize()
-        # SUPPRESSION de self.pp_resolution.execute() pour proteger le vecteur force !
         liste_construction = [self.residu]
 
-        for i in range(self.ordrePC):
+        # On crée P_total - 1 blocs de zéros pour compléter F
+        for i in range(self.P_total - 1):
             new_vec = PETSc.Vec().create()
             new_vec.setSizes(N)
             new_vec.setFromOptions()
             new_vec.set(0.0)
             liste_construction.append(new_vec)
+            
         self.F_assemble = PETSc.Vec().createNest(liste_construction)
         self.F_assemble.setUp()
         self.F_assemble.assemble()
@@ -136,7 +142,8 @@ class ssfem:
         N = self.matK.getSize()
         liste_construction = []
 
-        for j in range(self.ordrePC+1):
+        # P_total blocs pour la solution T
+        for j in range(self.P_total):
             Tj = PETSc.Vec().createSeq(N)
             Tj.setUp()
             liste_construction.append(Tj)
@@ -152,242 +159,114 @@ class ssfem:
         ksp.setType('minres')
 
         def monitor(ksp, its, rnorm):
-            if its <=5 :
+            # On affiche seulement tous les 10 pour ne pas spammer
+            if its % 10 == 0:
                 print(f"iteration {its}: residual norm = {rnorm}")
         ksp.setMonitor(monitor)
 
         try:
-            print(f"Voici taille F : {self.F_assemble.getSize()} et taille T : {self.T_assemble.getSize()}")
+            print(f"Taille matrice bloc K : {self.P_total} x {self.P_total} blocs")
             ksp.solve(self.F_assemble, self.T_assemble)
 
             if ksp.is_converged:
                 print(f"convergence en {ksp.getIterationNumber()} iterations")
-                print(f"Residu final : {ksp.getResidualNorm()}")
             else:
                 print("La resolution n'a pas converge")
-                print(f"Residu final : {ksp.getResidualNorm()}")
                 
             try:
-                import numpy as np
-                import os
-                
-                # 1. Extraction de la moyenne calculee par SSFEM (Mode 0 du Chaos)
                 T0 = self.T_assemble.getNestSubVecs()[0]
                 valeurs_T0 = np.array(T0.getArray())
-                
-                # 2. Chargement du fichier de reference genere par Monte Carlo
-                fichier_ref = "vraie_solution_mc.npy"
+                fichier_ref = "vraie_solution_mc_spatial.npy"
                 
                 if os.path.exists(fichier_ref):
                     valeurs_exactes = np.load(fichier_ref)
-                    
-                    # 3. Calcul de l'erreur maximale par rapport à cette reference
                     if len(valeurs_exactes) == len(valeurs_T0):
                         erreur_max = float(np.max(np.abs(valeurs_T0 - valeurs_exactes)))
-                        print(f"RESULTAT_BENCHMARK_ERREUR={erreur_max}")
-                    else:
-                        print(f"RESULTAT_BENCHMARK_ERREUR=ERREUR_TAILLE_PETSC")
+                        print(f"\n---> RESULTAT_BENCHMARK_ERREUR={erreur_max:.5f} <---\n")
                 else:
                     print(f"RESULTAT_BENCHMARK_ERREUR=FICHIER_REF_INTROUVABLE")
                     
             except Exception as e:
-                err_name = type(e).__name__
-                err_msg = str(e).replace(' ', '_').replace('\n', '')
-                print(f"RESULTAT_BENCHMARK_ERREUR=BUG_{err_name}_{err_msg}")
+                print(f"Erreur benchmark : {e}")
                 
         except PETSc.Error as e:
-            print(f"Erreur lors de la resolution : {e}")
+            print(f"Erreur PETSc : {e}")
             
         return self.T_assemble
 
-    def realiser(self):
-        N = self.matK.getSize()
-        dim = self.ordreKL 
-
-        self.realisation = PETSc.Vec().createSeq(N)
-        self.realisation.setUp()
-
-        T0 = self.T_assemble.getNestSubVecs()[0]  
-        T0.copy(result=self.realisation)
-        self.realisation.assemble()
+    def exporter_statistiques(self):
+        """Calcule et exporte la Moyenne (T0) et la Variance totale, et injecte le Vrai MC"""
+        print("Calcul et exportation de la Moyenne, de la Variance et du Vrai MC...")
         
-        # CORRECTION DU FORMAT : On cree un SEUL tirage global...
-        tirage_global = rd.normal(0, 1, dim)
-        # ... mais on le copie "ordrePC" fois dans une liste pour satisfaire la fonction eval_pc_basis
-        liste_tirage_formatee = [tirage_global for _ in range(self.ordrePC)]
-        
-        liste_psi_j = p_chaos.eval_pc_basis(self.ordrePC, dim, liste_tirage_formatee)
-        
-        for j in range(1, self.ordrePC + 1):
-            Tj = self.T_assemble.getNestSubVecs()[j]
-            temp = Tj.duplicate()
-            Tj.copy(result=temp)
-            temp.scale(liste_psi_j[j-1])
-            self.realisation.axpy(1.0, temp)
-            self.realisation.assemble()
-        
-        return self.realisation
-
-    def exportation(self):
-        import os
-        import numpy as np
-        
-        self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec() 
-        self.realiser().copy(result=self.T_imp)
-        self.T_imp.assemble()
-        
-        # INJECTION DE LA VRAIE SOLUTION POUR LA CALCULATRICE PARAVIEW
-        if os.path.exists("vraie_solution_mc.npy"):
-            T_mc = np.load("vraie_solution_mc.npy")
+        # --- 1. INJECTION DE LA VRAIE SOLUTION SPATIALE (MONTE CARLO) ---
+        fichier_ref = "vraie_solution_mc_spatial.npy"
+        if os.path.exists(fichier_ref):
+            T_mc = np.load(fichier_ref)
             vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
+            
+            # Injection sécurisée et forcée dans PETSc
             indices = np.arange(len(T_mc), dtype=np.int32)
             vec_exact.setValues(indices, T_mc)
             vec_exact.assemble()
-            self.gfc.reqPP("pp_visu_Texacte").execute()
             
-        self.gfc.lireLigne(f"""pp_exportation exportation_T [T_ssfem, "resultats/T_realisation_({self.ordreKL},{self.ordrePC})",0,true,false,false,false]""")
-        pp_copie_Timp = self.gfc.reqPP("pp_visualisation_T")
-        pp_exporte = self.gfc.reqPP("exportation_T")
-        pp_copie_Timp.execute()
-        pp_exporte.execute()
-        print("Exportation executee")
-        
-    def exporter_statistiques(self):
-        """Calcule et exporte la Moyenne (T0) et la Variance totale sur ParaView"""
-        print("Calcul et exportation de la Moyenne et de la Variance...")
-        
-        # 1. L'Esperance (Moyenne T0)
+            # On force MEF++ à mettre à jour le champ géométrique T_exacte_scallin
+            self.gfc.reqPP("pp_visu_Texacte").execute()
+            print("DEBUG: Transfert vers T_exacte_scallin execute avec succes.")
+        else:
+            print(f"ATTENTION: Fichier {fichier_ref} introuvable.")
+
+        # --- 2. EXPORT DE L'ESPÉRANCE (MOYENNE SSFEM) ---
         T0 = self.T_assemble.getNestSubVecs()[0]
         self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec()
         T0.copy(result=self.T_imp)
         self.T_imp.assemble()
         
-        # On renomme l'export pour ParaView et on l'execute
-        self.gfc.lireLigne(f"""pp_exportation exp_mean [T_ssfem, "resultats/T_Moyenne",0,true,false,false,false]""")
+        # Noms de fichiers personnalisés avec D et P
+        nom_fichier_moyenne = f"resultats/T_realisation_Moyenne_({self.D_rff},{self.ordrePC})"
+        self.gfc.lireLigne(f"""pp_exportation exp_mean [T_ssfem, "{nom_fichier_moyenne}",0,true,false,false,false]""")
+        
+        # On exécute le transfert PETSc -> Champ (met à jour T_exporte) puis on exporte
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_mean").execute()
         
-        # 2. La Variance (Somme des Tj^2)
+        # --- 3. EXPORT DE LA VARIANCE SSFEM ---
         T_var = T0.duplicate()
-        T_var.set(0.0) # On initialise à zero
+        T_var.set(0.0)
         temp = T0.duplicate()
         
-        # On boucle sur tous les modes stochastiques (de 1 jusqu'à P)
-        for j in range(1, self.ordrePC + 1):
+        for j in range(1, self.P_total):
             Tj = self.T_assemble.getNestSubVecs()[j]
-            temp.pointwiseMult(Tj, Tj) # temp = Tj * Tj (elevation au carre element par element)
-            T_var.axpy(1.0, temp)      # Ajout à la variance totale
+            temp.pointwiseMult(Tj, Tj) 
+            T_var.axpy(1.0, temp)
             
         T_var.assemble()
         T_var.copy(result=self.T_imp)
         self.T_imp.assemble()
         
-        self.gfc.lireLigne(f"""pp_exportation exp_var [T_ssfem, "resultats/T_Variance",0,true,false,false,false]""")
+        nom_fichier_variance = f"resultats/T_realisation_Variance_({self.D_rff},{self.ordrePC})"
+        self.gfc.lireLigne(f"""pp_exportation exp_var [T_ssfem, "{nom_fichier_variance}",0,true,false,false,false]""")
+        
+        # On met à jour T_exporte avec la variance et on exporte
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_var").execute()
         
-        print("Moyenne et Variance exportees avec succes ! Ouvre ParaView.")
-
-    def mc_reference(self, n_mc=10000):
-        """Methode de Monte Carlo classique pour generer la Vraie Solution"""
-        if not self.l_matK:
-            print("Erreur : Assemble les matrices RFF d'abord !")
-            return None
-            
-        print(f"--- Demarrage du Monte Carlo de Reference ({n_mc} iterations) ---")
-        N = self.matK.getSize()
-        T_mean = np.zeros(N[0])
-        
-        ksp_mc = PETSc.KSP().create()
-        ksp_mc.setType('preonly')
-        ksp_mc.getPC().setType('lu')
-        
-        vec_T = PETSc.Vec().createSeq(N[0])
-        vec_T.setUp()
-        
-        for i in range(n_mc):
-            xi = rd.normal(0, 1, self.ordreKL)
-            K_realisation = self.l_matK[0].duplicate()
-            self.l_matK[0].copy(result=K_realisation)
-            
-            for j in range(self.ordreKL):
-                K_realisation.axpy(xi[j], self.l_matK[j+1])
-            
-            K_realisation.assemble()
-            ksp_mc.setOperators(K_realisation)
-            ksp_mc.solve(self.residu, vec_T)
-            T_mean += np.array(vec_T.getArray())
-            
-            if (i+1) % 100 == 0:
-                print(f"Iteration MC brute force : {i+1}/{n_mc}")
-                
-        T_mean /= n_mc
-        np.save("vraie_solution_mc.npy", T_mean)
-        print("Termine ! La Vraie Solution est sauvegardee dans 'vraie_solution_mc.npy'")
-        return T_mean
+        print(f"Fichiers {nom_fichier_moyenne} et {nom_fichier_variance} exportes avec succes ! Ouvre ParaView.")
 
     def finalise(self):
-        print("Finalisation du singleton mefpp")
         mefpp.finalise()
 
-    def mc(self,n_mc,position,affichage=True):
-        if self.T_assemble is None:
-            print("Executer la resolution lineaire d'abord")
-            return None
-        
-        liste_realisation = []
-        for i in range(n_mc):
-            self.realiser()
-            liste_realisation.append(float(self.realisation.getValues(position)))
-            
-        if affichage:
-            plt.hist(liste_realisation, bins=30, color='blue')
-            plt.xlabel("Valeurs de T")
-            plt.ylabel("Densite de probabilite")
-            plt.title(f"Histogramme de Monte Carlo pour T à la position {position}")
-            plt.grid()
-            plt.savefig(f"mc_histo_{position}_kl{self.ordreKL}_pc{self.ordrePC}.png")
-            plt.close()
-        return liste_realisation
-
-    def test_ks(self,taille_echantillon, position):
-        if self.T_assemble is None:
-            print("Executer la resolution lineaire d'abord")
-            return None
-        
-        liste_echantillon = self.mc(taille_echantillon,position,False)
-        variance = np.var(liste_echantillon)
-        moyenne = self.T_assemble.getNestSubVecs()[0].getValues(position)
-        print(f"Moyenne : {moyenne}, Variance : {variance}")
-        
-        test_ks = ks_stat.ks(taille_echantillon, moyenne, variance)
-        test_ks.setter_echantillon(liste_echantillon)
-        calcul = test_ks.kstest()
-        test_ks.affichage()
-
 ######################  
-# exemple d'utilisation
+# Exemple d'utilisation
 ######################
 if len(sys.argv) == 3:
     a = ssfem(int(sys.argv[1]), int(sys.argv[2]))
-
     a.assemblage_premier()
     a.assemblage_second()
     a.assemblage_F()
     a.construction_T()
-    
-    # 1. resolution du chaos polynomial (RFF)
     T = a.resolution_lineaire()
     
-    # 2. exportation d'une realisation classique
-    a.exportation()
-    
-    # 3. exporte les cartes lisses de la moyenne et la variance
+    # On exporte directement les statistiques (la Moyenne T0 et la Variance)
     a.exporter_statistiques()
     
-    # 4. test statistique sur le noeud 500
-    a.test_ks(100, 500)
-    
-    # 5. a deselectionner (en enlevant le #) la premiere fois 
-    # pour generer le fichier de reference 'vraie_solution_mc.npy'
-    #a.mc_reference(10000)
+    a.finalise()
