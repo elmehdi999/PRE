@@ -5,107 +5,107 @@
 [0]
 [0]Temps de profiling "usager"
 [0] Total    sec(WC) s(SelfUser) s(SelfSys) s(ChildUser) s(ChildSys) (VmSizeDiff , VmRSSDiff, VmDataDiff) nbApls      Etiquette
-[0] Total   1370.0752  1339.5331    26.0303      0.0000      0.0000  9996672 KB  10022300 KB   9995520 KB    1 x  Prog_complet.
-[0] Total      0.0537     0.0010     0.0101      0.0000      0.0000      132 KB       652 KB       132 KB    1 x   PETScInitialisation.
-[0] Total      0.3091     0.1768     0.0666      0.0000      0.0000    32336 KB     41092 KB     31652 KB    2 x   CollectionDeCorps::lisDonneesDeBase.
-[0] Total      0.3085     0.1765     0.0663      0.0000      0.0000    32336 KB     40344 KB     31652 KB    2 x    CorpsAvecMaillage::lisDonneesDeBaseAvecMaillage(conduction_trou).
-[0] Total      0.0952     0.0350     0.0549      0.0000      0.0000    31564 KB     32804 KB     31564 KB    2 x     CorpsAvecMaillage::lectureMaillage(conduction_trou).
-[0] Total      0.0951     0.0349     0.0548      0.0000      0.0000    31564 KB     32800 KB     31564 KB    2 x      Maillage::importeParallele.
-[0] Total      0.0942     0.0347     0.0547      0.0000      0.0000    31564 KB     32796 KB     31564 KB    2 x       Maillage::importeSequentiel.
-[0] Total      0.0033     0.0033     0.0000      0.0000      0.0000        0 KB       236 KB         0 KB    2 x     Geometrie::reconstructionModeChampGeometrique.
-[0] Total      0.1450     0.0744     0.0112      0.0000      0.0000      772 KB      5872 KB        88 KB    2 x     CorpsAvecMaillage::lectureGFC(conduction_trou).
-[0] Total      0.0886     0.0234     0.0081      0.0000      0.0000      772 KB      1012 KB        88 KB    2 x      Interface::exporteInfo.
-[0] Total      0.0883     0.0232     0.0079      0.0000      0.0000      772 KB      1012 KB        88 KB    2 x       Interface::exporteMaillageChampGeoEntite.
-[0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x        Interface::creeMaillage.
-[0] Total      0.0001     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x        Interface::creeEntitesDeGroupements.
-[0] Total      0.0701     0.0227     0.0077      0.0000      0.0000      772 KB      1012 KB        88 KB    2 x        Interface::exporteInfo::GénérateurLieuxEtZones.
-[0] Total      0.0078     0.0077     0.0000      0.0000      0.0000        0 KB        56 KB         0 KB    2 x         InitLieuxGeoMaillage::finalise.
-[0] Total      0.0060     0.0060     0.0000      0.0000      0.0000        0 KB        56 KB         0 KB    2 x          InitLieuxGeoMaillage::calculeDimensionDesCouleursEtCreeLieux.
-[0] Total      0.0046     0.0045     0.0000      0.0000      0.0000        0 KB        56 KB         0 KB    2 x           InitLieuxGeoMaillage::regroupeComposantesConnexeDeMemeCouleur.
-[0] Total      0.0498     0.0057     0.0065      0.0000      0.0000      772 KB       828 KB        88 KB    2 x         Maillage::exporteParallele.
-[0] Total      0.0493     0.0052     0.0065      0.0000      0.0000      772 KB       764 KB        88 KB    2 x          ecritMaillageMPI.
-[0] Total      0.0001     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x       Interface::exporteInfo::EcritureChamps.
+[0] Total   1191.1696  1172.7055    14.5903      0.0000      0.0000 10217364 KB  10246244 KB  10216212 KB    1 x  Prog_complet.
+[0] Total      0.0530     0.0000     0.0112      0.0000      0.0000      132 KB      1228 KB       132 KB    1 x   PETScInitialisation.
+[0] Total      0.2684     0.1544     0.0702      0.0000      0.0000    32332 KB     40988 KB     31648 KB    2 x   CollectionDeCorps::lisDonneesDeBase.
+[0] Total      0.2679     0.1540     0.0701      0.0000      0.0000    32332 KB     40248 KB     31648 KB    2 x    CorpsAvecMaillage::lisDonneesDeBaseAvecMaillage(conduction_trou).
+[0] Total      0.0845     0.0237     0.0580      0.0000      0.0000    31560 KB     32808 KB     31560 KB    2 x     CorpsAvecMaillage::lectureMaillage(conduction_trou).
+[0] Total      0.0843     0.0236     0.0580      0.0000      0.0000    31560 KB     32804 KB     31560 KB    2 x      Maillage::importeParallele.
+[0] Total      0.0830     0.0235     0.0577      0.0000      0.0000    31560 KB     32800 KB     31560 KB    2 x       Maillage::importeSequentiel.
+[0] Total      0.0039     0.0024     0.0014      0.0000      0.0000        0 KB       236 KB         0 KB    2 x     Geometrie::reconstructionModeChampGeometrique.
+[0] Total      0.1143     0.0642     0.0104      0.0000      0.0000      772 KB      5832 KB        88 KB    2 x     CorpsAvecMaillage::lectureGFC(conduction_trou).
+[0] Total      0.0585     0.0129     0.0078      0.0000      0.0000      772 KB      1012 KB        88 KB    2 x      Interface::exporteInfo.
+[0] Total      0.0582     0.0128     0.0075      0.0000      0.0000      772 KB      1012 KB        88 KB    2 x       Interface::exporteMaillageChampGeoEntite.
+[0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x        Interface::creeMaillage.
+[0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x        Interface::creeEntitesDeGroupements.
+[0] Total      0.0562     0.0125     0.0074      0.0000      0.0000      772 KB      1012 KB        88 KB    2 x        Interface::exporteInfo::GénérateurLieuxEtZones.
+[0] Total      0.0039     0.0029     0.0010      0.0000      0.0000        0 KB        56 KB         0 KB    2 x         InitLieuxGeoMaillage::finalise.
+[0] Total      0.0031     0.0021     0.0009      0.0000      0.0000        0 KB        56 KB         0 KB    2 x          InitLieuxGeoMaillage::calculeDimensionDesCouleursEtCreeLieux.
+[0] Total      0.0024     0.0015     0.0009      0.0000      0.0000        0 KB        56 KB         0 KB    2 x           InitLieuxGeoMaillage::regroupeComposantesConnexeDeMemeCouleur.
+[0] Total      0.0446     0.0045     0.0057      0.0000      0.0000      772 KB       828 KB        88 KB    2 x         Maillage::exporteParallele.
+[0] Total      0.0441     0.0043     0.0055      0.0000      0.0000      772 KB       764 KB        88 KB    2 x          ecritMaillageMPI.
+[0] Total      0.0001     0.0000     0.0001      0.0000      0.0000        0 KB         0 KB         0 KB    2 x       Interface::exporteInfo::EcritureChamps.
 [0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x     CorpsAvecMaillage::lectureGFC2(conduction_trou).
-[0] Total      0.0626     0.0621     0.0000      0.0000      0.0000        0 KB       900 KB         0 KB    2 x     CorpsAvecMaillage::construitGeom2eFois(conduction_trou).
-[0] Total      0.0624     0.0619     0.0000      0.0000      0.0000        0 KB       900 KB         0 KB    2 x      Geometrie::reconstructionModeTocher.
-[0] Total      0.0013     0.0012     0.0000      0.0000      0.0000        0 KB       384 KB         0 KB    4 x   DDLsNumerotation::numeroteGIS().
-[0] Total      0.0007     0.0007     0.0000      0.0000      0.0000        0 KB       192 KB         0 KB    4 x    DDLsNumerotation::marqueEtNumeroteDDLs().
-[0] Total      0.0003     0.0003     0.0000      0.0000      0.0000        0 KB       128 KB         0 KB   12 x     DDLsNumerotation::numeroteGISChamps.
-[0] Total      0.0069     0.0058     0.0010      0.0000      0.0000        0 KB      1776 KB         0 KB    3 x   SolveurLinPETSc::initialise:ProbDida.
+[0] Total      0.0623     0.0619     0.0000      0.0000      0.0000        0 KB       840 KB         0 KB    2 x     CorpsAvecMaillage::construitGeom2eFois(conduction_trou).
+[0] Total      0.0620     0.0617     0.0000      0.0000      0.0000        0 KB       840 KB         0 KB    2 x      Geometrie::reconstructionModeTocher.
+[0] Total      0.0011     0.0010     0.0001      0.0000      0.0000        0 KB       384 KB         0 KB    4 x   DDLsNumerotation::numeroteGIS().
+[0] Total      0.0006     0.0005     0.0001      0.0000      0.0000        0 KB       192 KB         0 KB    4 x    DDLsNumerotation::marqueEtNumeroteDDLs().
+[0] Total      0.0002     0.0002     0.0001      0.0000      0.0000        0 KB       128 KB         0 KB   12 x     DDLsNumerotation::numeroteGISChamps.
+[0] Total      0.0067     0.0058     0.0007      0.0000      0.0000        0 KB      3312 KB         0 KB    3 x   SolveurLinPETSc::initialise:ProbDida.
 [0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x    SolveurLinPETSc::initialise:initialiseNumerotation:ProbDida.
-[0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB        64 KB         0 KB    3 x    SolveurLinPETSc::initialise:initialiseObjetPETSc:ProbDida.
-[0] Total      0.0019     0.0009     0.0010      0.0000      0.0000        0 KB      1712 KB         0 KB    1 x    MatricePETSc::asgnDimension(MatK:521x521).
-[0] Total      0.0019     0.0009     0.0010      0.0000      0.0000        0 KB      1712 KB         0 KB    1 x     MatricePETScCSR::creeObjet(MatK:521x521).
-[0] Total      0.0025     0.0024     0.0000      0.0000      0.0000        0 KB       112 KB         0 KB    3 x      CompteurNonZeroCSRGIS_matrice(521x521).
-[0] Total      0.0024     0.0023     0.0000      0.0000      0.0000        0 KB       112 KB         0 KB    3 x       CompteurNonZeroCSRGIS::algoMetaCouplages(521x521).
-[0] Total      0.0010     0.0010     0.0000      0.0000      0.0000        0 KB        48 KB         0 KB    3 x        CompteurNonZeroCSRGIS::visiteMaillage.
+[0] Total      0.0001     0.0000     0.0000      0.0000      0.0000        0 KB       256 KB         0 KB    3 x    SolveurLinPETSc::initialise:initialiseObjetPETSc:ProbDida.
+[0] Total      0.0019     0.0013     0.0006      0.0000      0.0000        0 KB      3056 KB         0 KB    1 x    MatricePETSc::asgnDimension(MatK:521x521).
+[0] Total      0.0018     0.0013     0.0005      0.0000      0.0000        0 KB      3056 KB         0 KB    1 x     MatricePETScCSR::creeObjet(MatK:521x521).
+[0] Total      0.0025     0.0020     0.0005      0.0000      0.0000        0 KB       112 KB         0 KB    3 x      CompteurNonZeroCSRGIS_matrice(521x521).
+[0] Total      0.0024     0.0019     0.0004      0.0000      0.0000        0 KB       112 KB         0 KB    3 x       CompteurNonZeroCSRGIS::algoMetaCouplages(521x521).
+[0] Total      0.0010     0.0007     0.0003      0.0000      0.0000        0 KB        48 KB         0 KB    3 x        CompteurNonZeroCSRGIS::visiteMaillage.
 [0] Total      0.0009     0.0009     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x        CompteurNonZeroCSRGIS::calculSequentielNbNonZerosParLigne(521x521).
-[0] Total      0.0005     0.0003     0.0002      0.0000      0.0000        0 KB      1280 KB         0 KB    3 x      MatricePETScCSR::creeObjetPrive.
-[0] Total      0.0007     0.0000     0.0007      0.0000      0.0000        0 KB       320 KB         0 KB    1 x      MatricePETScCSR::definirStructureEtMettreAZeroAvecGIS(Matrice_ProbDida_A_MatK_:521x521).
+[0] Total      0.0005     0.0004     0.0000      0.0000      0.0000        0 KB      2624 KB         0 KB    3 x      MatricePETScCSR::creeObjetPrive.
+[0] Total      0.0007     0.0007     0.0000      0.0000      0.0000        0 KB       320 KB         0 KB    1 x      MatricePETScCSR::definirStructureEtMettreAZeroAvecGIS(Matrice_ProbDida_A_MatK_:521x521).
 [0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x    SolveurLinPETSc::initialise:newVecResidu:ProbDida.
-[0] Total      0.0005     0.0004     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x    SolveurLinPETSc::initialise:initialiseVecResidu:ProbDida.
+[0] Total      0.0004     0.0004     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x    SolveurLinPETSc::initialise:initialiseVecResidu:ProbDida.
 [0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x    SolveurLinPETSc::initialise:newVecCorrection:ProbDida.
 [0] Total      0.0003     0.0003     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x    SolveurLinPETSc::initialise:initialiseVecCorrection:ProbDida.
-[0] Total      0.0018     0.0017     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x    MatricePETSc::asgnDimension(MatKbis:521x521).
-[0] Total      0.0017     0.0017     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x     MatricePETScCSR::creeObjet(MatKbis:521x521).
-[0] Total      0.0007     0.0006     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x      MatricePETScCSR::definirStructureEtMettreAZeroAvecGIS(Matrice_ProbDida_A_MatKbis_:521x521).
-[0] Total      0.0340     0.0246     0.0029      0.0000      0.0000     2020 KB      6900 KB      2020 KB    1 x   PP::lPPResoud_0_dans_section_actions_pour_solveur_Solveur(ProbDida)::preCalcul.
-[0] Total      0.0339     0.0245     0.0029      0.0000      0.0000     2020 KB      6900 KB      2020 KB    1 x    SolveurLinPETSc::resoudre:ProbDida.
-[0] Total      0.0023     0.0022     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x     SolveurLinPETSc::resoudre::init:ProbDida.
+[0] Total      0.0017     0.0017     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x    MatricePETSc::asgnDimension(MatKbis:521x521).
+[0] Total      0.0017     0.0016     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x     MatricePETScCSR::creeObjet(MatKbis:521x521).
+[0] Total      0.0006     0.0006     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x      MatricePETScCSR::definirStructureEtMettreAZeroAvecGIS(Matrice_ProbDida_A_MatKbis_:521x521).
+[0] Total      0.0272     0.0163     0.0021      0.0000      0.0000     2024 KB      7268 KB      2024 KB    1 x   PP::lPPResoud_0_dans_section_actions_pour_solveur_Solveur(ProbDida)::preCalcul.
+[0] Total      0.0272     0.0163     0.0021      0.0000      0.0000     2024 KB      7268 KB      2024 KB    1 x    SolveurLinPETSc::resoudre:ProbDida.
+[0] Total      0.0022     0.0021     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x     SolveurLinPETSc::resoudre::init:ProbDida.
 [0] Total      0.0017     0.0017     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x       MatricePETSc::asgnDimension(options_slin:521x521).
 [0] Total      0.0017     0.0017     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x        MatricePETScCSR::creeObjet(options_slin:521x521).
 [0] Total      0.0006     0.0006     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x         MatricePETScCSR::definirStructureEtMettreAZeroAvecGIS(Matrice_ProbDida_A_Solveur(ProbDida)_:521x521).
 [0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x     SolveurLinPETSc::resoudre::PPre:ProbDida.
-[0] Total      0.0036     0.0035     0.0000      0.0000      0.0000        0 KB       608 KB         0 KB    1 x     SolveurLinPETSc::resoudre::ass:ProbDida.
-[0] Total      0.0003     0.0002     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::appliqueChamp:ProbDida.
-[0] Total      0.0003     0.0003     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::debutAssemblage:ProbDida.
-[0] Total      0.0365     0.0356     0.0007      0.0000      0.0000        0 KB       356 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::assembleMatriceEtResidu:ProbDida.
-[0] Total      0.0362     0.0353     0.0007      0.0000      0.0000        0 KB       356 KB         0 KB   12 x       ProblemeEF::assemblePrive(Total):ProbDida.
-[0] Total      0.0359     0.0350     0.0007      0.0000      0.0000        0 KB       356 KB         0 KB   12 x        ProblemeEF::assemblePrive(Domaine):ProbDida.
-[0] Total      0.0355     0.0346     0.0007      0.0000      0.0000        0 KB       356 KB         0 KB   12 x         AssembleurEF::assembleElementBis():ProbDida[aAssembleurEF].
+[0] Total      0.0036     0.0036     0.0000      0.0000      0.0000        0 KB       416 KB         0 KB    1 x     SolveurLinPETSc::resoudre::ass:ProbDida.
+[0] Total      0.0003     0.0002     0.0001      0.0000      0.0000        0 KB         0 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::appliqueChamp:ProbDida.
+[0] Total      0.0003     0.0002     0.0001      0.0000      0.0000        0 KB         0 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::debutAssemblage:ProbDida.
+[0] Total      0.0377     0.0371     0.0003      0.0000      0.0000        0 KB       228 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::assembleMatriceEtResidu:ProbDida.
+[0] Total      0.0374     0.0368     0.0003      0.0000      0.0000        0 KB       228 KB         0 KB   12 x       ProblemeEF::assemblePrive(Total):ProbDida.
+[0] Total      0.0371     0.0365     0.0003      0.0000      0.0000        0 KB       228 KB         0 KB   12 x        ProblemeEF::assemblePrive(Domaine):ProbDida.
+[0] Total      0.0367     0.0362     0.0002      0.0000      0.0000        0 KB       228 KB         0 KB   12 x         AssembleurEF::assembleElementBis():ProbDida[aAssembleurEF].
 [0] Total      0.0002     0.0002     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   12 x          AssembleurEF::prepareAvantAssemblage(assembleElementBis):ProbDida[aAssembleurEF].
-[0] Total      0.0003     0.0003     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   12 x          AssembleurEF::nettoieApresAssemblage(assembleElementBis):ProbDida[aAssembleurEF].
-[0] Total      0.0006     0.0006     0.0000      0.0000      0.0000        0 KB        64 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::appliqueMatrice:ProbDida.
-[0] Total      0.0009     0.0009     0.0000      0.0000      0.0000        0 KB       188 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::appliqueResidu:ProbDida.
+[0] Total      0.0004     0.0003     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   12 x          AssembleurEF::nettoieApresAssemblage(assembleElementBis):ProbDida[aAssembleurEF].
+[0] Total      0.0006     0.0005     0.0000      0.0000      0.0000        0 KB        64 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::appliqueMatrice:ProbDida.
+[0] Total      0.0009     0.0009     0.0000      0.0000      0.0000        0 KB       124 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::appliqueResidu:ProbDida.
 [0] Total      0.0003     0.0003     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   12 x      SolveurLinPETSc::faisAssemblagePrive::finAssemblageProbDida.
-[0] Total      0.0033     0.0024     0.0009      0.0000      0.0000     2020 KB      5996 KB      2020 KB    1 x     SolveurLinPETSc::resoudre::resoudre:ProbDida.
-[0] Total      0.0031     0.0022     0.0009      0.0000      0.0000     2020 KB      5996 KB      2020 KB    1 x      SolveurLinPETSc::resoudre_Factorisation_et_DR:ProbDida.
-[0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB       256 KB         0 KB    1 x       asgnOperateurKSP.
-[0] Total      0.0024     0.0016     0.0008      0.0000      0.0000        0 KB      4856 KB         0 KB    1 x       SolveurLinPETSc::resoudre:KSPSetUp:ProbDida.
-[0] Total      0.0006     0.0006     0.0000      0.0000      0.0000     2020 KB       884 KB      2020 KB    1 x       SolveurLinPETSc::resoudre:KSPSolve:ProbDida.
+[0] Total      0.0030     0.0024     0.0006      0.0000      0.0000     2024 KB      6556 KB      2024 KB    1 x     SolveurLinPETSc::resoudre::resoudre:ProbDida.
+[0] Total      0.0029     0.0023     0.0005      0.0000      0.0000     2024 KB      6556 KB      2024 KB    1 x      SolveurLinPETSc::resoudre_Factorisation_et_DR:ProbDida.
+[0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x       asgnOperateurKSP.
+[0] Total      0.0023     0.0022     0.0000      0.0000      0.0000        0 KB      6408 KB         0 KB    1 x       SolveurLinPETSc::resoudre:KSPSetUp:ProbDida.
+[0] Total      0.0005     0.0000     0.0005      0.0000      0.0000     2024 KB       148 KB      2024 KB    1 x       SolveurLinPETSc::resoudre:KSPSolve:ProbDida.
 [0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x      SolveurLinPETSc::CL+VecDDLs:ProbDida.
-[0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x      SolveurLinPETSc::appliqueCorrectionAuProbleme:ProbDida.
-[0] Total      0.0246     0.0163     0.0020      0.0000      0.0000        0 KB       296 KB         0 KB    1 x     SolveurLinPETSc::resoudre::PPost:ProbDida.
-[0] Total      0.0245     0.0163     0.0020      0.0000      0.0000        0 KB       296 KB         0 KB    1 x      GestionPrePostTraitement::executePrePostTrait:GESTIONPREPOSTDEFAUT:FinPasDeTemps::exportation_TK.
-[0] Total      0.0243     0.0161     0.0019      0.0000      0.0000        0 KB       296 KB         0 KB    1 x       PP::exportation_TK::preCalcul.
-[0] Total      0.0001     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x       PP::exportation_TK::postCalcul.
+[0] Total      0.0001     0.0000     0.0001      0.0000      0.0000        0 KB         0 KB         0 KB    1 x      SolveurLinPETSc::appliqueCorrectionAuProbleme:ProbDida.
+[0] Total      0.0183     0.0081     0.0014      0.0000      0.0000        0 KB       296 KB         0 KB    1 x     SolveurLinPETSc::resoudre::PPost:ProbDida.
+[0] Total      0.0183     0.0081     0.0014      0.0000      0.0000        0 KB       296 KB         0 KB    1 x      GestionPrePostTraitement::executePrePostTrait:GESTIONPREPOSTDEFAUT:FinPasDeTemps::exportation_TK.
+[0] Total      0.0181     0.0080     0.0014      0.0000      0.0000        0 KB       296 KB         0 KB    1 x       PP::exportation_TK::preCalcul.
+[0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x       PP::exportation_TK::postCalcul.
 [0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::lPPResoud_0_dans_section_actions_pour_solveur_Solveur(ProbDida)::postCalcul.
-[0] Total      0.0369     0.0359     0.0009      0.0000      0.0000        0 KB         0 KB         0 KB   11 x   PP::ppAssMatEtRes::preCalcul.
-[0] Total      0.0002     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   11 x   PP::ppAssMatEtRes::postCalcul.
-[0] Total      0.0031     0.0030     0.0001      0.0000      0.0000        0 KB        80 KB         0 KB   10 x   PP::pp_interpoleK::preCalcul.
+[0] Total      0.0380     0.0370     0.0008      0.0000      0.0000        0 KB         0 KB         0 KB   11 x   PP::ppAssMatEtRes::preCalcul.
+[0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   11 x   PP::ppAssMatEtRes::postCalcul.
+[0] Total      0.0030     0.0027     0.0004      0.0000      0.0000        0 KB        80 KB         0 KB   10 x   PP::pp_interpoleK::preCalcul.
 [0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB   10 x   PP::pp_interpoleK::postCalcul.
 [0] Total      0.0004     0.0004     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x   PP::pp_visu_Texacte::preCalcul.
 [0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    2 x   PP::pp_visu_Texacte::postCalcul.
-[0] Total      0.0004     0.0001     0.0003      0.0000      0.0000        0 KB         0 KB         0 KB    3 x   PP::pp_visualisation_T::preCalcul.
-[0] Total      0.0001     0.0000     0.0001      0.0000      0.0000        0 KB         0 KB         0 KB    3 x   PP::pp_visualisation_T::postCalcul.
-[0] Total      0.0227     0.0033     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exportation_T::preCalcul.
+[0] Total      0.0004     0.0004     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x   PP::pp_visualisation_T::preCalcul.
+[0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    3 x   PP::pp_visualisation_T::postCalcul.
+[0] Total      0.0247     0.0022     0.0030      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exportation_T::preCalcul.
 [0] Total      0.0001     0.0001     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exportation_T::postCalcul.
-[0] Total      0.0325     0.0047     0.0001      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exp_mean::preCalcul.
-[0] Total      0.0001     0.0000     0.0001      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exp_mean::postCalcul.
-[0] Total      0.0061     0.0017     0.0008      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exp_var::preCalcul.
+[0] Total      0.0079     0.0064     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exp_mean::preCalcul.
+[0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exp_mean::postCalcul.
+[0] Total      0.0056     0.0030     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exp_var::preCalcul.
 [0] Total      0.0000     0.0000     0.0000      0.0000      0.0000        0 KB         0 KB         0 KB    1 x   PP::exp_var::postCalcul.
-[0]Memoire VmSizeMin. mesure            : 2626724 KB
-[0]Memoire VmSizeMax. mesure            : 12621896 KB
-[0]Memoire (VmSizeMax-VmSizeMin) mesure : 9995172 KB
-[0]Memoire VmRSSMin. mesure             : 256712 KB
-[0]Memoire VmRSSMax. mesure             : 10276140 KB
-[0]Memoire VmHWM (véritable RSSMax)     : 10279012 KB
-[0]Memoire (VmRSSMax-VmRSSMin) mesure   : 10019428 KB
-[0]Memoire VmDataMin. mesure             : 1702812 KB
-[0]Memoire VmDataMax. mesure             : 11697300 KB
-[0]Memoire (VmDataMax-VmDataMin) mesure   : 9994488 KB
-[0]Memoire VmPeak(Init). mesure         : 2626724 KB
-[0]Memoire VmPeak. mesure               : 12623396 KB
-[0]Memoire (VmPeak-VmPeak(Init)) mesure : 9996672 KB
+[0]Memoire VmSizeMin. mesure            : 2626736 KB
+[0]Memoire VmSizeMax. mesure            : 12842600 KB
+[0]Memoire (VmSizeMax-VmSizeMin) mesure : 10215864 KB
+[0]Memoire VmRSSMin. mesure             : 268464 KB
+[0]Memoire VmRSSMax. mesure             : 10511816 KB
+[0]Memoire VmHWM (véritable RSSMax)     : 10514740 KB
+[0]Memoire (VmRSSMax-VmRSSMin) mesure   : 10243352 KB
+[0]Memoire VmDataMin. mesure             : 1702824 KB
+[0]Memoire VmDataMax. mesure             : 11918004 KB
+[0]Memoire (VmDataMax-VmDataMin) mesure   : 10215180 KB
+[0]Memoire VmPeak(Init). mesure         : 2626736 KB
+[0]Memoire VmPeak. mesure               : 12844100 KB
+[0]Memoire (VmPeak-VmPeak(Init)) mesure : 10217364 KB
 [0]Memoire VmExe mesure                 : 4 KB
 [0]Memoire VmLib mesure                 : 436280 KB
