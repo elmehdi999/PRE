@@ -140,6 +140,21 @@ schemaintg schema_intg ParamSchema
 }
 pp_resolution_probleme resolution [ProbDida,Solveur(ProbDida)]
 
+# =======================================================
+# EXTRACTION COORDONNEES & INJECTION NISP
+# =======================================================
+scalconstelem coord_x_elem x
+scalconstelem coord_y_elem y
+
+vecteur Vec_X_elem [ProbFactice, "colonne"]
+vecteur Vec_Y_elem [ProbFactice, "colonne"]
+
+pp_copie_champ_dans_vecteur pp_copie_X_elem [coord_x_elem, Vec_X_elem, K]
+pp_copie_champ_dans_vecteur pp_copie_Y_elem [coord_y_elem, Vec_Y_elem, K]
+
+pp_copie_vecteur_dans_champs pp_import_K [K_imp, K, K]
+# =======================================================
+
 // =======================================================
 // Nouveaux elements pour le Monte Carlo Spatial
 // =======================================================
@@ -159,8 +174,8 @@ vecteur vec_bruit_blanc [ProbBruit, "colonne"]
 // 1. Injection
 pp_copie_vecteur_dans_champs pp_import_bruit [vec_bruit_blanc, bruit_blanc, bruit_blanc]
 
-// 2. Le Filtre (Source, Destination, Rayon) !
-pp_filtrage_gaussien applique_filtre_uniforme [bruit_blanc, bruit_filtre, rayon_filtre]
+// 2. Le Filtre (Source, Destination, Rayon)
+pp_filtrage_gaussien applique_filtre_gaussien [bruit_blanc, bruit_filtre, rayon_filtre]
 
 // 3. Application au materiau
 scalaire K_spatial_formule 1.0+bruit_filtre
