@@ -13,7 +13,7 @@ import glob
 from scipy.stats import qmc
 from scipy.stats import norm
 import numpy.polynomial.hermite_e as hermite_e 
-from sklearn.linear_model import OrthogonalMatchingPursuit
+from sklearn.linear_model import OrthogonalMatchingPursuitCV
 from mefpp4py import mefpp
 import petsc4py
 from petsc4py import PETSc
@@ -27,23 +27,19 @@ class NISP_RFF:
         
         self.P_total = math.comb(self.d + self.p, self.d)
         
-        print("="*60)
-        print(" INITIALISATION NISP-RFF (RÉGRESSION SPARSE OMP)")
-        print("="*60)
+        print(" INITIALISATION NISP-RFF (RÉGRESSION SPARSE OMP-CV)\n")
         print(f"Ondes RFF (D)            : {self.D_rff}")
-        print(f"Variables stochastiques (d) : {self.d}")
         print(f"Ordre du Chaos (P)          : {self.p}")
         print(f"Taille théorique (P_total)  : {self.P_total}")
-        print(f"Evaluations cibles MEF++ (N): {self.N_evaluations}")
-        print("="*60)
+        print(f"Evaluations cibles MEF++ (N): {self.N_evaluations}\n")
         
-        # Nettoyage console
+        # nettoyage console
         opts = PETSc.Options()
         for opt in ['options_slinksp_atol', 'options_slinksp_divtol', 'options_slinksp_max_it', 'options_slinksp_rtol']:
             if opts.hasName(opt):
                 opts.delValue(opt)
 
-        prefixe = "conduction_trou"
+        prefixe = "conduction_trou" # a remplacer pour chaque probleme
         petsc4py.init(sys.argv)
         mefpp.initialise(prefixe)
         mefpp.litEtExecuteActionsDansCollection()
@@ -54,19 +50,20 @@ class NISP_RFF:
 
         self.vecteur_T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec()
         self.vec_K = self.gfc.reqVecteurPETSc("K_imp").reqVec()
+        
+        # definition des index des l'initialisation
         self.indices_K = np.arange(self.vec_K.getSize(), dtype=np.int32)
+        self.indices_T = np.arange(self.vecteur_T_imp.getSize(), dtype=np.int32)
         
         self.matK = self.gfc.reqMatricePETSc("MatK").reqMat()
         self.residu = self.gfc.reqVecteurPETSc("Residu").reqVec()
         
         self.pp_assemblage = self.gfc.reqPP("ppAssMatEtRes")
         self.pp_import_K = self.gfc.reqPP("pp_import_K")
-        
-        # --- CORRECTION : Réintégration des opérateurs MEF++ manquants ---
         self.pp_resolution = self.gfc.reqPP("resolution")
         self.pp_copie_T = self.gfc.reqPP("pp_copie_T_imp")
         
-        # --- EXTRACTION SÉCURISÉE DES COORDONNÉES SPATIALES ---
+        # extraction des coordonnees spatiales
         self.gfc.reqPP("pp_copie_X_elem").execute()
         self.gfc.reqPP("pp_copie_Y_elem").execute()
         
@@ -75,29 +72,31 @@ class NISP_RFF:
         
         self.X_elem = vec_x_petsc.getValues(self.indices_K)
         self.Y_elem = vec_y_petsc.getValues(self.indices_K)
-        print(f"-> Coordonnées extraites pour {len(self.X_elem)} éléments.")
+        print(f" Coordonnées extraites pour {len(self.X_elem)} éléments.")
 
     def initialiser_frequences(self):
-        print("\n--- Initialisation des fréquences RFF ---")
+        print("\n Initialisation des fréquences RFF")
         l_corr = 0.12
         rng = np.random.default_rng(42)
         self.w = rng.normal(0, 1.0/l_corr, (self.D_rff, 2))
         self.facteur_norm = 0.3 * np.sqrt(1.0 / self.D_rff)
+        
+        phases = self.w[:, [0]] * self.X_elem + self.w[:, [1]] * self.Y_elem
+        self.cos_phases = np.cos(phases)
+        self.sin_phases = np.sin(phases)
+        
         print("Fréquences générées.")
 
     def generer_plan_experience(self):
-        print(f"\n--- Génération du LHS ({self.N_evaluations} échantillons) ---")
+        print(f"\n Génération du LHS ({self.N_evaluations} échantillons) ---")
         sampler = qmc.LatinHypercube(d=self.d, seed=42)
         sample_uniform = sampler.random(n=self.N_evaluations)
         self.Xi = norm.ppf(sample_uniform)
         
     def evaluer_boite_noire(self):
-        print("\n--- Évaluation du modèle MEF++ (Boîte Noire) ---")
-        N_noeuds = self.vecteur_T_imp.getSize()
-        self.indices_T = np.arange(N_noeuds, dtype=np.int32)
+        print("\n Evaluation MEF++")
         
-        # 1. On trouve automatiquement le "point chaud" (bord du trou, ~19°C)
-        # CORRECTION ICI : on utilise vec_K de manière robuste (comme dans la boucle)
+        # 1. on trouve automatiquement le "point chaud" (bord du trou pour le probleme de plaque trouee)
         K_init = np.ones_like(self.X_elem)
         self.vec_K.setValues(self.indices_K, K_init)
         self.vec_K.assemble()
@@ -111,7 +110,7 @@ class NISP_RFF:
         print(f"-> Noeud d'intérêt ciblé sur le point chaud (Temp. initiale = {T_ref[self.noeud_cible]:.2f}°C)")
         
         self.Y_eval = np.zeros(self.N_evaluations)
-        self.T_mean_global = np.zeros(N_noeuds)
+        self.T_mean_global = np.zeros(len(self.indices_T))
         
         fd_stdout = sys.stdout.fileno()
         fd_stderr = sys.stderr.fileno()
@@ -122,24 +121,20 @@ class NISP_RFF:
         start_time = time.time()
         
         for i in range(self.N_evaluations):
-            # Calcul Numpy du K_total (parfait et validé)
-            K_total = np.ones_like(self.X_elem)
+            # calcul numpy de K_total
+            xi_cos = self.Xi[i, 0::2]  
+            xi_sin = self.Xi[i, 1::2]  
+            K_total = 1.0 + self.facteur_norm * (xi_cos @ self.cos_phases + xi_sin @ self.sin_phases)
             
-            for j in range(self.D_rff):
-                phase = self.w[j, 0] * self.X_elem + self.w[j, 1] * self.Y_elem
-                xi_cos = self.Xi[i, 2*j]
-                xi_sin = self.Xi[i, 2*j + 1]
-                K_total += self.facteur_norm * (xi_cos * np.cos(phase) + xi_sin * np.sin(phase))
-            
-            # Clip physique (Conductivité toujours strictement positive)
+            # clip physique 
             K_total = np.clip(K_total, 0.05, None)
             
-            # Injection
+            # injection
             self.vec_K.setValues(self.indices_K, K_total)
             self.vec_K.assemble()
             self.pp_import_K.execute()
             
-            # Résolution native (100% MEF++)
+            # resolution avec MEF++
             os.dup2(devnull, fd_stdout)
             os.dup2(devnull, fd_stderr)
             try:
@@ -150,34 +145,42 @@ class NISP_RFF:
                 os.dup2(old_stdout, fd_stdout)
                 os.dup2(old_stderr, fd_stderr)
             
-            # Extraction des données
+            # extraction des donnees
             T_courant = self.vecteur_T_imp.getValues(self.indices_T)
             self.Y_eval[i] = T_courant[self.noeud_cible]
             self.T_mean_global += T_courant / self.N_evaluations
             
             if (i+1) % 50 == 0:
                 print(f"  [{i+1}/{self.N_evaluations}] Évaluations terminées... (T_max = {self.Y_eval[i]:.2f}°C)")
-                # Nettoyage intelligent (vtm, vtu, pvd générés dans la boucle)
+                # nettoyage automatique des fichiers residus
                 for f in glob.glob("resultats/T_resultat_ssfem*.*"):
                      try: os.remove(f)
                      except Exception: pass
         
         os.close(devnull)
         end_time = time.time()
-        print(f"-> Temps d'évaluation Boîte Noire : {end_time - start_time:.2f} secondes.")
+        print(f" Temps d'évaluation MEF++ : {end_time - start_time:.2f} secondes.")
         np.save(f"vraie_solution_NISP_D{self.D_rff}.npy", self.T_mean_global)
                 
-    def generer_multi_indices(self):
-        print("\n--- Construction de la base du Chaos Polynomial ---")
+    def generer_multi_indices(self, q=0.75):
+        print(f"\n Construction de la base PC (troncature hyperbolique q={q}) ---")
         indices = []
         for c in itertools.combinations(range(self.d + self.p), self.d):
-            idx = [c[0]] + [c[i] - c[i-1] - 1 for i in range(1, self.d)]
-            indices.append(tuple(idx))
+            idx = tuple([c[0]] + [c[i] - c[i-1] - 1 for i in range(1, self.d)])
+            
+            # troncature hyperbolique : norme-q <= p
+            norme_q = sum(a**q for a in idx) ** (1.0/q) if sum(idx) > 0 else 0.0
+            if norme_q <= self.p:
+                indices.append(idx)
+                
         self.multi_indices = indices
-        print(f"-> Base générée : {len(self.multi_indices)} polynômes candidats.")
+        self.P_effectif = len(indices)
+        
+        print(f" Base complète : {self.P_total} polynômes")
+        print(f" Après troncature hyperbolique (q={q}) : {self.P_effectif} polynômes candidats")
         
     def evaluer_polynomes_hermite(self):
-        self.Psi = np.ones((self.N_evaluations, len(self.multi_indices)))
+        self.Psi = np.ones((self.N_evaluations, self.P_effectif))
         for p_idx, alpha in enumerate(self.multi_indices):
             for j in range(self.d):
                 if alpha[j] > 0:
@@ -188,41 +191,75 @@ class NISP_RFF:
                     self.Psi[:, p_idx] *= (val_hermite / norm_factor)
                     
     def regression_omp(self):
-        print("\n--- Apprentissage Sparse (OMP) ---")
-        n_coefs = min(int(0.1 * self.P_total), self.N_evaluations // 2)
+        print("\n Apprentissage Sparse (OMP-CV avec validation croisée) ---")
         
-        omp = OrthogonalMatchingPursuit(n_nonzero_coefs=n_coefs, fit_intercept=False)
+        # OMP avec validation croisee (cv=5) determinera le nombre de coefficients optimal
+        omp = OrthogonalMatchingPursuitCV(fit_intercept=False, cv=5)
         omp.fit(self.Psi, self.Y_eval)
         self.coefficients = omp.coef_
         
         t_moyen = self.coefficients[0] 
         t_var = np.sum(self.coefficients[1:]**2) 
         
-        print("\n" + "="*60)
+        print("\n")
         print(" RÉSULTATS DU NISP-RFF SUR LE NOEUD CIBLE (Point Chaud)")
-        print("="*60)
         print(f"Moyenne empirique évaluée      : {np.mean(self.Y_eval):.4f} °C")
         print(f"Espérance E[T] prédite (OMP)   : {t_moyen:.4f} °C")
+        
+        ecart = abs(t_moyen - np.mean(self.Y_eval))
+        if ecart > 0.5:
+            print(f"  [!] ATTENTION : écart de {ecart:.2f}°C entre MC empirique et prédiction PCE.")
+            print(f"      La régression sparse pourrait ne pas avoir bien convergé.")
+            
         print(f"Variance Var[T] prédite (OMP)  : {t_var:.4f}")
-        print(f"Polynômes non-nuls (actifs)    : {np.count_nonzero(self.coefficients)} / {self.P_total}")
+        
+        if hasattr(omp, 'n_nonzero_coefs_'):
+            n_actifs = omp.n_nonzero_coefs_
+        else:
+            n_actifs = np.count_nonzero(self.coefficients)
+            
+        print(f"Polynômes non-nuls (actifs)    : {n_actifs} / {self.P_effectif}")
         print("="*60)
 
     def exporter_resultats(self):
-        print("\n--- Exportation VTU pour ParaView ---")
+        print("\n Exportation VTU")
         
-        # Astuce absolue anti-lock : On écrit la moyenne dans "T_exacte_vec" qui est totalement libre
+        # 1. pousser la moyenne NISP dans le champ "T_exacte_scallin" (via le vecteur libre T_exacte_vec)
         vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
         vec_exact.setValues(self.indices_T, self.T_mean_global)
         vec_exact.assemble()
-        self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("pp_visu_Texacte").execute()
 
-        nom_fichier = f"resultats/Moyenne_NISP_D{self.D_rff}_P{self.p}"
+        # 2. pousser la moyenne MC dans le champ "T_exporte" (astuce absolue : utilisation du Residu pour eviter les verrous)
+        fichier_ref = "vraie_solution_mc_spatial.npy"
+        if os.path.exists(fichier_ref):
+            T_mc = np.load(fichier_ref)
+            
+            residu_backup = self.residu.duplicate()
+            self.residu.copy(result=residu_backup)
+            
+            # injection securisee dans Residu (qui est un vecteur nodal totalement libre)
+            self.residu.setValues(self.indices_T, T_mc)
+            self.residu.assemble()
+            
+            # creation a la volee d'une regle de copie entre Residu et le champ T_exporte
+            self.gfc.lireLigne('pp_copie_vecteur_dans_champs pp_push_mc [Residu, T_exporte, T]')
+            self.gfc.reqPP("pp_push_mc").execute()
+            print(" Fichier Monte Carlo d'origine chargé pour la comparaison.")
+            
+            residu_backup.copy(result=self.residu)
+            residu_backup.destroy()
+        else:
+            print(" Attention: Fichier 'vraie_solution_mc_spatial.npy' introuvable.")
+        
+        # 3. exporter l'unique fichier contenant les deux champs
+        nom_fichier = f"resultats/Comparaison_NISP_MC_D{self.D_rff}_P{self.p}"
         self.gfc.lireLigne(f'pp_exportation exp_finale [T_ssfem, "{nom_fichier}",0,true,false,false,false]')
         self.gfc.reqPP("exp_finale").execute()
         
-        print(f"-> Succès : Fichier '{nom_fichier}.vtu' généré !")
-        print("-> Pour visualiser la moyenne NISP dans ParaView, sélectionnez le champ 'T_exacte_scallin'.")
+        print(f" Fichier '{nom_fichier}.vtu' généré.")
+        print("  'T_exacte_scallin' = Moyenne prédite par la méthode NISP")
+        print("  'T_exporte'        = Vraie moyenne de référence Monte Carlo")
 
     def finalise(self):
         mefpp.finalise()
@@ -233,11 +270,11 @@ if __name__ == "__main__":
         nisp.initialiser_frequences()
         nisp.generer_plan_experience()
         nisp.evaluer_boite_noire() 
-        nisp.generer_multi_indices()
+        nisp.generer_multi_indices(q=0.75)  # troncature hyperbolique
         nisp.evaluer_polynomes_hermite()
         nisp.regression_omp()
         nisp.exporter_resultats()  
         nisp.finalise()
     else:
         print("Usage : python nisp_rff.py <D_rff> <Ordre_P> <N_evaluations>")
-        print("Exemple : python nisp_rff.py 100 3 200")
+        print("Exemple : python nisp_rff.py 20 3 500")
