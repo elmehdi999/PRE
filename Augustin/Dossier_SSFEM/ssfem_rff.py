@@ -87,15 +87,17 @@ class ssfem:
             self.pp_assemblageMatEtRes.execute()
             mat_cos = self.matK.duplicate()
             self.matK.copy(result=mat_cos)
+            mat_cos.axpy(-1.0, self.l_matK[0])  # purification : retire K_mean
             mat_cos.scale(facteur_norm)
             self.l_matK.append(mat_cos)
-            
+
             # MATRICE SIN
             self.champ_phase.asgnValeur(-np.pi / 2.0)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
             mat_sin = self.matK.duplicate()
             self.matK.copy(result=mat_sin)
+            mat_sin.axpy(-1.0, self.l_matK[0])  # purification : retire K_mean
             mat_sin.scale(facteur_norm)
             self.l_matK.append(mat_sin)
               
