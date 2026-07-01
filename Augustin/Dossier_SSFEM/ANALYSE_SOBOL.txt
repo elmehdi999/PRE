@@ -1,0 +1,272 @@
+(13:43:19) [erable]:Dossier_SSFEM> python analyse_sobol.py
+============================================================
+ CALCUL DES INDICES DE SOBOL TOTAUX (NISP-RFF)
+============================================================
+ INITIALISATION NISP-RFF (RÉGRESSION SPARSE OMP-CV)
+
+Ondes RFF (D)            : 50
+Ordre du Chaos (P)          : 3
+Taille théorique (P_total)  : 176851
+Evaluations cibles MEF++ (N): 500
+
+Info      : LDProblemeEF::lisDeclaration  ProbDida
+Info      : LDProblemeEF::lisDeclaration  ProbFactice
+Info      : LDProblemeEF::lisDeclaration  ProbFactice2
+Info      : LDProblemeEF::lisDeclaration  ProbFactice3
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] T_imp
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] T_exacte_vec
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] K_imp
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice2, "colonne"] F_imp
+Info      : LDMatricePETSc::lisDeclaration [ProbDida] MatK
+Info      : LDMatricePETSc::lisDeclaration [ProbDida] MatKbis
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] Residu
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "ligne"] Residu2
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK format_exportation VTK
+Info      : LDExportation_Format::lisDeclaration exportation export_TK format_exportation VTK
+Info      : Le mot-clé asgndegreinterpolation est obsolète (avec ou sans majuscules), utilisez le mot-clé degre_interpolation
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : LDExportation_DegreInterpolation::lisDeclaration exportation export_TK degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : Le mot-clé EXPORTATION::EMAILLAGE_LINEAIRE est obsolète (avec ou sans majuscules), utilisez le mot-clé LIN
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : Le mot-clé asgnexportetoujoursmaillage est obsolète (avec ou sans majuscules), utilisez le mot-clé exporte_toujours_maillage
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK exporte_toujours_maillage faux
+Info      : LDExportation_ExporteMaillage::lisDeclaration exportation export_TK exporte_toujours_maillage faux
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ   T
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ T
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ   K
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ K
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ T_exacte_scallin
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ T_exacte_scallin
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ F
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ F
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK prefixe_sorties ./resultat
+Info      : LDExportation_Prefixe::lisDeclaration exportation export_TK prefixe_sorties ./resultat
+Info      : LDPPExportation::lisDeclaration pp_exportation [export_TK, "resultats/T_resultat_ssfem",2,true,false,false,false] exportation_TK
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem format_exportation VTK
+Info      : LDExportation_Format::lisDeclaration exportation T_ssfem format_exportation VTK
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem ajoute_champ T_exporte
+Info      : LDExportation_Champ::lisDeclaration exportation T_ssfem ajoute_champ T_exporte
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem ajoute_champ T_exacte_scallin
+Info      : LDExportation_Champ::lisDeclaration exportation T_ssfem ajoute_champ T_exacte_scallin
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem prefixe_sorties ./resultat
+Info      : LDExportation_Prefixe::lisDeclaration exportation T_ssfem prefixe_sorties ./resultat
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[K, K_intermediaire2] , NomObjet : pp_interpoleK
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[T_exacte_scallin, T_exacte], NomObjet : pp_interpoleTexacte
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[F, F_intermediaire], NomObjet : pp_interpoleF
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [T,T_imp,T] pp_copie_T_imp
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [T_exacte_scallin, T_exacte_vec, T] pp_copie_Texacte_vec
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [K,K_imp,K] pp_copie_K_imp
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [F, F_imp, F] pp_copie_F_imp
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [T_imp, T_exporte, T] pp_visualisation_T
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [T_exacte_vec, T_exacte_scallin, T] pp_visu_Texacte
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida,MatK] ppAssMatK
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, Residu] ppAssRes
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, MatK, Residu] ppAssMatEtRes
+Info      : LDSchemaIntegration::lisDeclarationParamSchemaschema_intg
+Info      : LDNamespaceBase::lisDeclaration: solveur_lin Solveur(ProbDida) prefixe_options options_slin
+Info      : LDOptionsSolveurs_OptionPrefixe::lisDeclaration solveur_lin Solveur(ProbDida) prefixe_options options_slin
+Info      : LDPPResolutionProbleme::lisDeclaration [ProbDida,Solveur(ProbDida)] resolution
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] Vec_X_elem
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] Vec_Y_elem
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [coord_x_elem, Vec_X_elem, K] pp_copie_X_elem
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [coord_y_elem, Vec_Y_elem, K] pp_copie_Y_elem
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [K_imp, K, K] pp_import_K
+Info      : LDProblemeEF::lisDeclaration  ProbBruit
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_bruit [champgeo, bruit_blanc, bruit_blanc, Z, schema_intg]
+Info      : On ajoute le TF Tf_bruit au problème: ProbBruit pour contribution à la partie  stationnaire.
+Info      : LDVecteurPETSc::lisDeclaration [ProbBruit, "colonne"] vec_bruit_blanc
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [vec_bruit_blanc, bruit_blanc, bruit_blanc] pp_import_bruit
+Info      : LDPPFiltrage::lisDeclaration [bruit_blanc, bruit_filtre, rayon_filtre] applique_filtre_gaussien
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[K, K_spatial_formule], NomObjet : pp_interpole_K_spatial
+Info      : LDTFGenerique::lisDeclaration tfdiffusiondiffusivite1d TFDiffT [champgeo, T, T, K, schema_intg]
+Info      : On ajoute le TF TFDiffT au problème: ProbDida pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfsourcefvscal TFSrcF [champgeo, F, T,    schema_intg]
+Info      : On ajoute le TF TFSrcF au problème: ProbDida pour contribution à la partie  stationnaire.
+Info      : LDCondLimDirichlet::lisDeclaration dirichlet scalaire "bord_exterieur" "T" "cond_ext"
+Info      : LDCondLimNeumann::lisDeclaration neumann scalaire "bord_trou" "T" "flux_trou" "schema_intg"
+Info      : LDAjoutePrePostTraitement::lisDeclaration [exportation_TK,FinPasDeTemps] dans le NS: ProbDida
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice [champgeo, K, K, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice au problème: ProbFactice pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice2 [champgeo, F2, F2, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice2 au problème: ProbFactice2 pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice3 [champgeo, F3, F3, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice3 au problème: ProbFactice3 pour contribution à la partie  stationnaire.
+Info      : LDActions::lisDeclaration Solveur(ProbDida) 
+Info      : LDPPResolutionProbleme::lisDeclaration [Solveur(ProbDida)] lPPResoud_0_dans_section_actions_pour_solveur_Solveur(ProbDida)
+Info      : On ne crée pas de maillage de peau car on n'a pas trouvé la chaine nommée: corps::entite_pour_peau
+  Residual norms for options_slin solve.
+  0 KSP Residual norm 2.098788587123e+01
+  1 KSP Residual norm 1.152054422105e-13
+Info      : Vous avez ajouté le champ F à l'exportation export_TK.
+Info      : Vous avez ajouté le champ T_exacte_scallin à l'exportation export_TK.
+Info      : Vous avez ajouté le champ K à l'exportation export_TK.
+Info      : Vous avez ajouté le champ T à l'exportation export_TK.
+Attention : Pas d'export possible des champs PPI pour le pilote d'exportation au format PiloteExportationVTK pour l'export export_TK
+Info      : On a exécuté 1 actions.
+Info      : Le corps demandé a déjà été trouvé dans la collection de corps
+Info      : Corps demandé : conduction_trou
+Info      : LDProblemeEF::lisDeclaration  ProbDida
+Info      : LDProblemeEF::lisDeclaration  ProbFactice
+Info      : LDProblemeEF::lisDeclaration  ProbFactice2
+Info      : LDProblemeEF::lisDeclaration  ProbFactice3
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] T_imp
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] T_exacte_vec
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] K_imp
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice2, "colonne"] F_imp
+Info      : LDMatricePETSc::lisDeclaration [ProbDida] MatK
+Info      : LDMatricePETSc::lisDeclaration [ProbDida] MatKbis
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] Residu
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "ligne"] Residu2
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK format_exportation VTK
+Info      : LDExportation_Format::lisDeclaration exportation export_TK format_exportation VTK
+Info      : Le mot-clé asgndegreinterpolation est obsolète (avec ou sans majuscules), utilisez le mot-clé degre_interpolation
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : LDExportation_DegreInterpolation::lisDeclaration exportation export_TK degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : Le mot-clé EXPORTATION::EMAILLAGE_LINEAIRE est obsolète (avec ou sans majuscules), utilisez le mot-clé LIN
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : Le mot-clé asgnexportetoujoursmaillage est obsolète (avec ou sans majuscules), utilisez le mot-clé exporte_toujours_maillage
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK exporte_toujours_maillage faux
+Info      : LDExportation_ExporteMaillage::lisDeclaration exportation export_TK exporte_toujours_maillage faux
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ   T
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ T
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ   K
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ K
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ T_exacte_scallin
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ T_exacte_scallin
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ F
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ F
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK prefixe_sorties ./resultat
+Info      : LDExportation_Prefixe::lisDeclaration exportation export_TK prefixe_sorties ./resultat
+Info      : LDPPExportation::lisDeclaration pp_exportation [export_TK, "resultats/T_resultat_ssfem",2,true,false,false,false] exportation_TK
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem format_exportation VTK
+Info      : LDExportation_Format::lisDeclaration exportation T_ssfem format_exportation VTK
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem ajoute_champ T_exporte
+Info      : LDExportation_Champ::lisDeclaration exportation T_ssfem ajoute_champ T_exporte
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem ajoute_champ T_exacte_scallin
+Info      : LDExportation_Champ::lisDeclaration exportation T_ssfem ajoute_champ T_exacte_scallin
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem prefixe_sorties ./resultat
+Info      : LDExportation_Prefixe::lisDeclaration exportation T_ssfem prefixe_sorties ./resultat
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[K, K_intermediaire2] , NomObjet : pp_interpoleK
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[T_exacte_scallin, T_exacte], NomObjet : pp_interpoleTexacte
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[F, F_intermediaire], NomObjet : pp_interpoleF
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [T,T_imp,T] pp_copie_T_imp
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [T_exacte_scallin, T_exacte_vec, T] pp_copie_Texacte_vec
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [K,K_imp,K] pp_copie_K_imp
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [F, F_imp, F] pp_copie_F_imp
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [T_imp, T_exporte, T] pp_visualisation_T
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [T_exacte_vec, T_exacte_scallin, T] pp_visu_Texacte
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida,MatK] ppAssMatK
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, Residu] ppAssRes
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, MatK, Residu] ppAssMatEtRes
+Info      : LDSchemaIntegration::lisDeclarationParamSchemaschema_intg
+Info      : LDNamespaceBase::lisDeclaration: solveur_lin Solveur(ProbDida) prefixe_options options_slin
+Info      : LDOptionsSolveurs_OptionPrefixe::lisDeclaration solveur_lin Solveur(ProbDida) prefixe_options options_slin
+Info      : LDPPResolutionProbleme::lisDeclaration [ProbDida,Solveur(ProbDida)] resolution
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] Vec_X_elem
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] Vec_Y_elem
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [coord_x_elem, Vec_X_elem, K] pp_copie_X_elem
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [coord_y_elem, Vec_Y_elem, K] pp_copie_Y_elem
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [K_imp, K, K] pp_import_K
+Info      : LDProblemeEF::lisDeclaration  ProbBruit
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_bruit [champgeo, bruit_blanc, bruit_blanc, Z, schema_intg]
+Info      : On ajoute le TF Tf_bruit au problème: ProbBruit pour contribution à la partie  stationnaire.
+Info      : LDVecteurPETSc::lisDeclaration [ProbBruit, "colonne"] vec_bruit_blanc
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [vec_bruit_blanc, bruit_blanc, bruit_blanc] pp_import_bruit
+Info      : LDPPFiltrage::lisDeclaration [bruit_blanc, bruit_filtre, rayon_filtre] applique_filtre_gaussien
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[K, K_spatial_formule], NomObjet : pp_interpole_K_spatial
+Info      : LDTFGenerique::lisDeclaration tfdiffusiondiffusivite1d TFDiffT [champgeo, T, T, K, schema_intg]
+Info      : On ajoute le TF TFDiffT au problème: ProbDida pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfsourcefvscal TFSrcF [champgeo, F, T,    schema_intg]
+Info      : On ajoute le TF TFSrcF au problème: ProbDida pour contribution à la partie  stationnaire.
+Info      : LDCondLimDirichlet::lisDeclaration dirichlet scalaire "bord_exterieur" "T" "cond_ext"
+Info      : LDCondLimNeumann::lisDeclaration neumann scalaire "bord_trou" "T" "flux_trou" "schema_intg"
+Info      : LDAjoutePrePostTraitement::lisDeclaration [exportation_TK,FinPasDeTemps] dans le NS: ProbDida
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice [champgeo, K, K, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice au problème: ProbFactice pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice2 [champgeo, F2, F2, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice2 au problème: ProbFactice2 pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice3 [champgeo, F3, F3, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice3 au problème: ProbFactice3 pour contribution à la partie  stationnaire.
+Info      : LDActions::lisDeclaration Solveur(ProbDida) 
+Info      : LDPPResolutionProbleme::lisDeclaration [Solveur(ProbDida)] lPPResoud_1_dans_section_actions_pour_solveur_Solveur(ProbDida)
+Info      : On ne crée pas de maillage de peau car on n'a pas trouvé la chaine nommée: corps::entite_pour_peau
+ Coordonnées extraites pour 942 éléments.
+
+ Initialisation des fréquences RFF
+Fréquences générées.
+
+ Génération du LHS (500 échantillons) ---
+
+ Evaluation MEF++
+  Residual norms for options_slin solve.
+  0 KSP Residual norm 1.163311576821e-13
+  1 KSP Residual norm 1.502236055510e-28
+Attention : Pas d'export possible des champs PPI pour le pilote d'exportation au format PiloteExportationVTK pour l'export export_TK
+ Noeud d'intérêt ciblé sur le point chaud (Temp. initiale = 19.14°C)
+  [50/500] Évaluations terminées... (T_max = 19.14°C)
+  [100/500] Évaluations terminées... (T_max = 19.43°C)
+  [150/500] Évaluations terminées... (T_max = 19.17°C)
+  [200/500] Évaluations terminées... (T_max = 18.90°C)
+  [250/500] Évaluations terminées... (T_max = 19.31°C)
+  [300/500] Évaluations terminées... (T_max = 19.69°C)
+  [350/500] Évaluations terminées... (T_max = 18.97°C)
+  [400/500] Évaluations terminées... (T_max = 18.95°C)
+  [450/500] Évaluations terminées... (T_max = 19.25°C)
+  [500/500] Évaluations terminées... (T_max = 19.49°C)
+ Temps d'évaluation MEF++ : 15.96 secondes.
+
+ Construction de la base PC (troncature hyperbolique q=0.75) ---
+ Base complète : 176851 polynômes
+ Après troncature hyperbolique (q=0.75) : 5251 polynômes candidats
+
+ Apprentissage Sparse (OMP-CV avec validation croisée) ---
+
+
+ RÉSULTATS DU NISP-RFF SUR LE NOEUD CIBLE (Point Chaud)
+Moyenne empirique évaluée      : 19.1405 °C
+Espérance E[T] prédite (OMP)   : 19.1406 °C
+Variance Var[T] prédite (OMP)  : 0.1552
+Polynômes non-nuls (actifs)    : 102 / 5251
+
+ ERREUR SPATIALE GLOBALE L2 (Sur tout le maillage)
+Erreur L2 sur la Moyenne       : 5.6432e-04 (0.06 %)
+Erreur L2 sur la Variance      : 1.7552e-01 (17.55 %)
+============================================================
+
+[SUCCÈS] Histogramme de Sobol généré : sobol_indices.png
+-> Nombre d'ondes dominantes (>5% d'influence) : 2 sur 50
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There are 4 unused database options. They are:
+Option left: name:-options_slinksp_atol value: 1e-20 source: code
+Option left: name:-options_slinksp_divtol value: 1e30 source: code
+Option left: name:-options_slinksp_max_it value: 4000 source: code
+Option left: name:-options_slinksp_rtol value: 1e-12 source: code

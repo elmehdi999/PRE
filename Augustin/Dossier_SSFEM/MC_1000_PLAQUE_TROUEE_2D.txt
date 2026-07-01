@@ -1,0 +1,220 @@
+(16:13:53) [erable]:Dossier_SSFEM> python mc_spatial.py
+--- Demarrage de Monte Carlo (1000 iterations) ---
+Info      : LDProblemeEF::lisDeclaration  ProbDida
+Info      : LDProblemeEF::lisDeclaration  ProbFactice
+Info      : LDProblemeEF::lisDeclaration  ProbFactice2
+Info      : LDProblemeEF::lisDeclaration  ProbFactice3
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] T_imp
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] T_exacte_vec
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] K_imp
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice2, "colonne"] F_imp
+Info      : LDMatricePETSc::lisDeclaration [ProbDida] MatK
+Info      : LDMatricePETSc::lisDeclaration [ProbDida] MatKbis
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "colonne"] Residu
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, "ligne"] Residu2
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK format_exportation VTK
+Info      : LDExportation_Format::lisDeclaration exportation export_TK format_exportation VTK
+Info      : Le mot-clé asgndegreinterpolation est obsolète (avec ou sans majuscules), utilisez le mot-clé degre_interpolation
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : LDExportation_DegreInterpolation::lisDeclaration exportation export_TK degre_interpolation Exportation::eMAILLAGE_LINEAIRE
+Info      : Le mot-clé EXPORTATION::EMAILLAGE_LINEAIRE est obsolète (avec ou sans majuscules), utilisez le mot-clé LIN
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : Le mot-clé asgnexportetoujoursmaillage est obsolète (avec ou sans majuscules), utilisez le mot-clé exporte_toujours_maillage
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK exporte_toujours_maillage faux
+Info      : LDExportation_ExporteMaillage::lisDeclaration exportation export_TK exporte_toujours_maillage faux
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ   T
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ T
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ   K
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ K
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ T_exacte_scallin
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ T_exacte_scallin
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK ajoute_champ F
+Info      : LDExportation_Champ::lisDeclaration exportation export_TK ajoute_champ F
+Info      : LDNamespaceBase::lisDeclaration: exportation export_TK prefixe_sorties ./resultat
+Info      : LDExportation_Prefixe::lisDeclaration exportation export_TK prefixe_sorties ./resultat
+Info      : LDPPExportation::lisDeclaration pp_exportation [export_TK, "resultats/T_resultat_ssfem",2,true,false,false,false] exportation_TK
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem format_exportation VTK
+Info      : LDExportation_Format::lisDeclaration exportation T_ssfem format_exportation VTK
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem ajoute_champ T_exporte
+Info      : LDExportation_Champ::lisDeclaration exportation T_ssfem ajoute_champ T_exporte
+Info      : Le mot-clé ajoutechamp est obsolète (avec ou sans majuscules), utilisez le mot-clé ajoute_champ
+Info      : cette syntaxe ne sera plus supportée à partir du : 1/3/2027
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem ajoute_champ T_exacte_scallin
+Info      : LDExportation_Champ::lisDeclaration exportation T_ssfem ajoute_champ T_exacte_scallin
+Info      : LDNamespaceBase::lisDeclaration: exportation T_ssfem prefixe_sorties ./resultat
+Info      : LDExportation_Prefixe::lisDeclaration exportation T_ssfem prefixe_sorties ./resultat
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[K, K_intermediaire2] , NomObjet : pp_interpoleK
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[T_exacte_scallin, T_exacte], NomObjet : pp_interpoleTexacte
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[F, F_intermediaire], NomObjet : pp_interpoleF
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [T,T_imp,T] pp_copie_T_imp
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [T_exacte_scallin, T_exacte_vec, T] pp_copie_Texacte_vec
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [K,K_imp,K] pp_copie_K_imp
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [F, F_imp, F] pp_copie_F_imp
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [T_imp, T_exporte, T] pp_visualisation_T
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [T_exacte_vec, T_exacte_scallin, T] pp_visu_Texacte
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida,MatK] ppAssMatK
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, Residu] ppAssRes
+Info      : LDVecteurPETSc::lisDeclaration [ProbDida, MatK, Residu] ppAssMatEtRes
+Info      : LDSchemaIntegration::lisDeclarationParamSchemaschema_intg
+Info      : LDNamespaceBase::lisDeclaration: solveur_lin Solveur(ProbDida) prefixe_options options_slin
+Info      : LDOptionsSolveurs_OptionPrefixe::lisDeclaration solveur_lin Solveur(ProbDida) prefixe_options options_slin
+Info      : LDPPResolutionProbleme::lisDeclaration [ProbDida,Solveur(ProbDida)] resolution
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] Vec_X_elem
+Info      : LDVecteurPETSc::lisDeclaration [ProbFactice, "colonne"] Vec_Y_elem
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [coord_x_elem, Vec_X_elem, K] pp_copie_X_elem
+Info      : LDPPCopieChampDansVecteur::lisDeclaration [coord_y_elem, Vec_Y_elem, K] pp_copie_Y_elem
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [K_imp, K, K] pp_import_K
+Info      : LDProblemeEF::lisDeclaration  ProbBruit
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_bruit [champgeo, bruit_blanc, bruit_blanc, Z, schema_intg]
+Info      : On ajoute le TF Tf_bruit au problème: ProbBruit pour contribution à la partie  stationnaire.
+Info      : LDVecteurPETSc::lisDeclaration [ProbBruit, "colonne"] vec_bruit_blanc
+Info      : LDPPCopieVecteurDansChamps::lisDeclaration [vec_bruit_blanc, bruit_blanc, bruit_blanc] pp_import_bruit
+Info      : LDPPFiltrage::lisDeclaration [bruit_blanc, bruit_filtre, rayon_filtre] applique_filtre_gaussien
+Info      : LDPPReinterpole::lisDeclaration, Ligne :[K, K_spatial_formule], NomObjet : pp_interpole_K_spatial
+Info      : LDTFGenerique::lisDeclaration tfdiffusiondiffusivite1d TFDiffT [champgeo, T, T, K, schema_intg]
+Info      : On ajoute le TF TFDiffT au problème: ProbDida pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfsourcefvscal TFSrcF [champgeo, F, T,    schema_intg]
+Info      : On ajoute le TF TFSrcF au problème: ProbDida pour contribution à la partie  stationnaire.
+Info      : LDCondLimDirichlet::lisDeclaration dirichlet scalaire "bord_exterieur" "T" "cond_ext"
+Info      : LDCondLimNeumann::lisDeclaration neumann scalaire "bord_trou" "T" "flux_trou" "schema_intg"
+Info      : LDAjoutePrePostTraitement::lisDeclaration [exportation_TK,FinPasDeTemps] dans le NS: ProbDida
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice [champgeo, K, K, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice au problème: ProbFactice pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice2 [champgeo, F2, F2, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice2 au problème: ProbFactice2 pour contribution à la partie  stationnaire.
+Info      : LDTFGenerique::lisDeclaration tfdiffusion Tf_factice3 [champgeo, F3, F3, Z, schema_intg]
+Info      : On ajoute le TF Tf_factice3 au problème: ProbFactice3 pour contribution à la partie  stationnaire.
+Info      : LDActions::lisDeclaration Solveur(ProbDida) 
+Info      : LDPPResolutionProbleme::lisDeclaration [Solveur(ProbDida)] lPPResoud_0_dans_section_actions_pour_solveur_Solveur(ProbDida)
+Info      : On ne crée pas de maillage de peau car on n'a pas trouvé la chaine nommée: corps::entite_pour_peau
+  Residual norms for options_slin solve.
+  0 KSP Residual norm 2.098788587123e+01
+  1 KSP Residual norm 1.152054422105e-13
+Info      : Vous avez ajouté le champ F à l'exportation export_TK.
+Info      : Vous avez ajouté le champ T_exacte_scallin à l'exportation export_TK.
+Info      : Vous avez ajouté le champ K à l'exportation export_TK.
+Info      : Vous avez ajouté le champ T à l'exportation export_TK.
+Attention : Pas d'export possible des champs PPI pour le pilote d'exportation au format PiloteExportationVTK pour l'export export_TK
+Info      : On a exécuté 1 actions.
+Iteration 10/1000 | T_max: 19.53°C | Err. Standard MC: 1.9366e-01
+Iteration 20/1000 | T_max: 19.33°C | Err. Standard MC: 1.0499e-01
+Iteration 30/1000 | T_max: 19.81°C | Err. Standard MC: 9.2271e-02
+Iteration 40/1000 | T_max: 19.41°C | Err. Standard MC: 7.7513e-02
+Iteration 50/1000 | T_max: 19.93°C | Err. Standard MC: 6.8109e-02
+Iteration 60/1000 | T_max: 19.95°C | Err. Standard MC: 6.4830e-02
+Iteration 70/1000 | T_max: 19.95°C | Err. Standard MC: 5.8881e-02
+Iteration 80/1000 | T_max: 19.33°C | Err. Standard MC: 5.3440e-02
+Iteration 90/1000 | T_max: 19.64°C | Err. Standard MC: 4.9315e-02
+Iteration 100/1000 | T_max: 19.51°C | Err. Standard MC: 4.6047e-02
+Iteration 110/1000 | T_max: 19.85°C | Err. Standard MC: 4.2890e-02
+Iteration 120/1000 | T_max: 19.69°C | Err. Standard MC: 4.1448e-02
+Iteration 130/1000 | T_max: 19.53°C | Err. Standard MC: 3.9451e-02
+Iteration 140/1000 | T_max: 19.96°C | Err. Standard MC: 3.7508e-02
+Iteration 150/1000 | T_max: 19.74°C | Err. Standard MC: 3.6346e-02
+Iteration 160/1000 | T_max: 19.91°C | Err. Standard MC: 3.5260e-02
+Iteration 170/1000 | T_max: 19.86°C | Err. Standard MC: 3.3900e-02
+Iteration 180/1000 | T_max: 19.71°C | Err. Standard MC: 3.2392e-02
+Iteration 190/1000 | T_max: 19.62°C | Err. Standard MC: 3.1854e-02
+Iteration 200/1000 | T_max: 19.68°C | Err. Standard MC: 3.0823e-02
+Iteration 210/1000 | T_max: 20.14°C | Err. Standard MC: 3.0259e-02
+Iteration 220/1000 | T_max: 19.73°C | Err. Standard MC: 2.9475e-02
+Iteration 230/1000 | T_max: 19.52°C | Err. Standard MC: 2.8339e-02
+Iteration 240/1000 | T_max: 20.12°C | Err. Standard MC: 2.7559e-02
+Iteration 250/1000 | T_max: 20.33°C | Err. Standard MC: 2.7281e-02
+Iteration 260/1000 | T_max: 19.14°C | Err. Standard MC: 2.6582e-02
+Iteration 270/1000 | T_max: 19.77°C | Err. Standard MC: 2.6019e-02
+Iteration 280/1000 | T_max: 19.58°C | Err. Standard MC: 2.5654e-02
+Iteration 290/1000 | T_max: 19.19°C | Err. Standard MC: 2.5167e-02
+Iteration 300/1000 | T_max: 19.49°C | Err. Standard MC: 2.4832e-02
+Iteration 310/1000 | T_max: 20.11°C | Err. Standard MC: 2.4474e-02
+Iteration 320/1000 | T_max: 19.62°C | Err. Standard MC: 2.4053e-02
+Iteration 330/1000 | T_max: 19.56°C | Err. Standard MC: 2.3506e-02
+Iteration 340/1000 | T_max: 19.96°C | Err. Standard MC: 2.3098e-02
+Iteration 350/1000 | T_max: 20.11°C | Err. Standard MC: 2.2880e-02
+Iteration 360/1000 | T_max: 19.02°C | Err. Standard MC: 2.2400e-02
+Iteration 370/1000 | T_max: 19.46°C | Err. Standard MC: 2.2085e-02
+Iteration 380/1000 | T_max: 20.04°C | Err. Standard MC: 2.1963e-02
+Iteration 390/1000 | T_max: 19.51°C | Err. Standard MC: 2.1584e-02
+Iteration 400/1000 | T_max: 19.71°C | Err. Standard MC: 2.1266e-02
+Iteration 410/1000 | T_max: 19.25°C | Err. Standard MC: 2.1431e-02
+Iteration 420/1000 | T_max: 19.54°C | Err. Standard MC: 2.1245e-02
+Iteration 430/1000 | T_max: 19.96°C | Err. Standard MC: 2.0921e-02
+Iteration 440/1000 | T_max: 19.79°C | Err. Standard MC: 2.0666e-02
+Iteration 450/1000 | T_max: 19.60°C | Err. Standard MC: 2.0267e-02
+Iteration 460/1000 | T_max: 19.46°C | Err. Standard MC: 2.0017e-02
+Iteration 470/1000 | T_max: 19.74°C | Err. Standard MC: 1.9722e-02
+Iteration 480/1000 | T_max: 19.64°C | Err. Standard MC: 1.9538e-02
+Iteration 490/1000 | T_max: 19.24°C | Err. Standard MC: 1.9387e-02
+Iteration 500/1000 | T_max: 19.50°C | Err. Standard MC: 1.9087e-02
+Iteration 510/1000 | T_max: 19.39°C | Err. Standard MC: 1.9072e-02
+Iteration 520/1000 | T_max: 20.25°C | Err. Standard MC: 1.8804e-02
+Iteration 530/1000 | T_max: 19.90°C | Err. Standard MC: 1.8746e-02
+Iteration 540/1000 | T_max: 20.09°C | Err. Standard MC: 1.8460e-02
+Iteration 550/1000 | T_max: 20.07°C | Err. Standard MC: 1.8427e-02
+Iteration 560/1000 | T_max: 19.38°C | Err. Standard MC: 1.8159e-02
+Iteration 570/1000 | T_max: 19.67°C | Err. Standard MC: 1.7914e-02
+Iteration 580/1000 | T_max: 19.71°C | Err. Standard MC: 1.7741e-02
+Iteration 590/1000 | T_max: 19.73°C | Err. Standard MC: 1.7515e-02
+Iteration 600/1000 | T_max: 19.69°C | Err. Standard MC: 1.7300e-02
+Iteration 610/1000 | T_max: 19.51°C | Err. Standard MC: 1.7097e-02
+Iteration 620/1000 | T_max: 19.78°C | Err. Standard MC: 1.6919e-02
+Iteration 630/1000 | T_max: 19.26°C | Err. Standard MC: 1.6813e-02
+Iteration 640/1000 | T_max: 19.69°C | Err. Standard MC: 1.6822e-02
+Iteration 650/1000 | T_max: 19.63°C | Err. Standard MC: 1.6622e-02
+Iteration 660/1000 | T_max: 20.22°C | Err. Standard MC: 1.6476e-02
+Iteration 670/1000 | T_max: 19.48°C | Err. Standard MC: 1.6379e-02
+Iteration 680/1000 | T_max: 19.87°C | Err. Standard MC: 1.6295e-02
+Iteration 690/1000 | T_max: 19.43°C | Err. Standard MC: 1.6156e-02
+Iteration 700/1000 | T_max: 19.95°C | Err. Standard MC: 1.6047e-02
+Iteration 710/1000 | T_max: 19.18°C | Err. Standard MC: 1.5916e-02
+Iteration 720/1000 | T_max: 20.06°C | Err. Standard MC: 1.5813e-02
+Iteration 730/1000 | T_max: 19.73°C | Err. Standard MC: 1.5632e-02
+Iteration 740/1000 | T_max: 18.97°C | Err. Standard MC: 1.5511e-02
+Iteration 750/1000 | T_max: 19.55°C | Err. Standard MC: 1.5348e-02
+Iteration 760/1000 | T_max: 19.38°C | Err. Standard MC: 1.5229e-02
+Iteration 770/1000 | T_max: 18.94°C | Err. Standard MC: 1.5182e-02
+Iteration 780/1000 | T_max: 19.70°C | Err. Standard MC: 1.5072e-02
+Iteration 790/1000 | T_max: 19.63°C | Err. Standard MC: 1.4937e-02
+Iteration 800/1000 | T_max: 20.15°C | Err. Standard MC: 1.4904e-02
+Iteration 810/1000 | T_max: 20.02°C | Err. Standard MC: 1.4809e-02
+Iteration 820/1000 | T_max: 19.63°C | Err. Standard MC: 1.4714e-02
+Iteration 830/1000 | T_max: 19.93°C | Err. Standard MC: 1.4577e-02
+Iteration 840/1000 | T_max: 19.72°C | Err. Standard MC: 1.4517e-02
+Iteration 850/1000 | T_max: 20.00°C | Err. Standard MC: 1.4448e-02
+Iteration 860/1000 | T_max: 19.86°C | Err. Standard MC: 1.4329e-02
+Iteration 870/1000 | T_max: 20.02°C | Err. Standard MC: 1.4210e-02
+Iteration 880/1000 | T_max: 19.56°C | Err. Standard MC: 1.4130e-02
+Iteration 890/1000 | T_max: 19.79°C | Err. Standard MC: 1.4063e-02
+Iteration 900/1000 | T_max: 19.99°C | Err. Standard MC: 1.3970e-02
+Iteration 910/1000 | T_max: 20.04°C | Err. Standard MC: 1.3895e-02
+Iteration 920/1000 | T_max: 19.69°C | Err. Standard MC: 1.3789e-02
+Iteration 930/1000 | T_max: 19.59°C | Err. Standard MC: 1.3685e-02
+Iteration 940/1000 | T_max: 19.30°C | Err. Standard MC: 1.3726e-02
+Iteration 950/1000 | T_max: 19.46°C | Err. Standard MC: 1.3645e-02
+Iteration 960/1000 | T_max: 20.34°C | Err. Standard MC: 1.3613e-02
+Iteration 970/1000 | T_max: 19.83°C | Err. Standard MC: 1.3505e-02
+Iteration 980/1000 | T_max: 19.79°C | Err. Standard MC: 1.3443e-02
+Iteration 990/1000 | T_max: 19.33°C | Err. Standard MC: 1.3343e-02
+Iteration 1000/1000 | T_max: 19.15°C | Err. Standard MC: 1.3253e-02
+
+Termine !
+Temps d'exécution : 194.0237 secondes
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+There are 4 unused database options. They are:
+Option left: name:-options_slinksp_atol value: 1e-20 source: code
+Option left: name:-options_slinksp_divtol value: 1e30 source: code
+Option left: name:-options_slinksp_max_it value: 4000 source: code
+Option left: name:-options_slinksp_rtol value: 1e-12 source: code
