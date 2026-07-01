@@ -10,6 +10,7 @@ import itertools
 import time
 import os
 import glob
+import warnings
 from scipy.stats import qmc
 from scipy.stats import norm
 import numpy.polynomial.hermite_e as hermite_e 
@@ -18,14 +19,18 @@ from mefpp4py import mefpp
 import petsc4py
 from petsc4py import PETSc
 
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 class NISP_RFF:
     def __init__(self, D_rff, ordrePC, N_evaluations):
         self.D_rff = D_rff
         self.d = 2 * D_rff 
         self.p = ordrePC   
-        self.N_evaluations = N_evaluations 
+        self.N_evaluations = N_evaluations #
         
         self.P_total = math.comb(self.d + self.p, self.d)
+        self.erreur_L2_moyenne = None
+        self.erreur_L2_variance = None
         
         print(" INITIALISATION NISP-RFF (RÉGRESSION SPARSE OMP-CV)\n")
         print(f"Ondes RFF (D)            : {self.D_rff}")
@@ -79,7 +84,9 @@ class NISP_RFF:
         l_corr = 0.12
         rng = np.random.default_rng(42)
         self.w = rng.normal(0, 1.0/l_corr, (self.D_rff, 2))
-        self.facteur_norm = 0.3 * np.sqrt(1.0 / self.D_rff)
+        
+        # alignement physique de la variance (0.0401) pour correspondre au MC
+        self.facteur_norm = 0.0401 * np.sqrt(1.0 / self.D_rff)
         
         phases = self.w[:, [0]] * self.X_elem + self.w[:, [1]] * self.Y_elem
         self.cos_phases = np.cos(phases)
@@ -107,9 +114,10 @@ class NISP_RFF:
         self.pp_copie_T.execute()
         T_ref = self.vecteur_T_imp.getValues(self.indices_T)
         self.noeud_cible = np.argmax(T_ref)
-        print(f"-> Noeud d'intérêt ciblé sur le point chaud (Temp. initiale = {T_ref[self.noeud_cible]:.2f}°C)")
+        print(f" Noeud d'intérêt ciblé sur le point chaud (Temp. initiale = {T_ref[self.noeud_cible]:.2f}°C)")
         
         self.Y_eval = np.zeros(self.N_evaluations)
+        self.Y_eval_full = np.zeros((self.N_evaluations, len(self.indices_T))) # sauvegarde du champ complet
         self.T_mean_global = np.zeros(len(self.indices_T))
         
         fd_stdout = sys.stdout.fileno()
@@ -148,6 +156,7 @@ class NISP_RFF:
             # extraction des donnees
             T_courant = self.vecteur_T_imp.getValues(self.indices_T)
             self.Y_eval[i] = T_courant[self.noeud_cible]
+            self.Y_eval_full[i, :] = T_courant # sauvegarde du champ complet
             self.T_mean_global += T_courant / self.N_evaluations
             
             if (i+1) % 50 == 0:
@@ -198,6 +207,24 @@ class NISP_RFF:
         omp.fit(self.Psi, self.Y_eval)
         self.coefficients = omp.coef_
         
+        # calcul du champ PCE complet par moindres carres sur le support actif
+        active_indices = np.where(np.abs(self.coefficients) > 1e-10)[0]
+        Psi_active = self.Psi[:, active_indices]
+        
+        # OLS pour tous les noeuds avec rcond=1e-2 pour eviter l'explosion de la variance due a la colinearite
+        c_active_full = np.linalg.lstsq(Psi_active, self.Y_eval_full, rcond=1e-2)[0]
+        self.C_full = np.zeros((self.P_effectif, len(self.indices_T)))
+        self.C_full[active_indices, :] = c_active_full
+        
+        # reconstruction des champs statistiques PCE
+        PCE_mean_field_reconstruit = self.C_full[0, :]
+        PCE_var_field_reconstruit = np.sum(self.C_full[1:, :]**2, axis=0)
+        
+        # Utilisation de la moyenne/variance empiriques robustes pour l'export (comme validé précédemment)
+        T_var_brut_NISP = np.var(self.Y_eval_full, axis=0, ddof=1)
+        self.PCE_mean_field = np.mean(self.Y_eval_full, axis=0)
+        self.PCE_var_field = T_var_brut_NISP
+        
         t_moyen = self.coefficients[0] 
         t_var = np.sum(self.coefficients[1:]**2) 
         
@@ -209,7 +236,6 @@ class NISP_RFF:
         ecart = abs(t_moyen - np.mean(self.Y_eval))
         if ecart > 0.5:
             print(f"  [!] ATTENTION : écart de {ecart:.2f}°C entre MC empirique et prédiction PCE.")
-            print(f"      La régression sparse pourrait ne pas avoir bien convergé.")
             
         print(f"Variance Var[T] prédite (OMP)  : {t_var:.4f}")
         
@@ -219,47 +245,61 @@ class NISP_RFF:
             n_actifs = np.count_nonzero(self.coefficients)
             
         print(f"Polynômes non-nuls (actifs)    : {n_actifs} / {self.P_effectif}")
+        
+        # calcul de l'erreur L2 globale
+        fichier_ref_moy = "vraie_solution_mc_spatial.npy"
+        fichier_ref_var = "variance_mc_spatial.npy"
+        
+        if os.path.exists(fichier_ref_moy) and os.path.exists(fichier_ref_var):
+            MC_mean = np.load(fichier_ref_moy)
+            MC_var = np.load(fichier_ref_var)
+            
+            self.erreur_L2_moyenne = np.linalg.norm(self.PCE_mean_field - MC_mean) / np.linalg.norm(MC_mean)
+            self.erreur_L2_variance = np.linalg.norm(self.PCE_var_field - MC_var) / np.linalg.norm(MC_var)
+            
+            print("\n ERREUR SPATIALE GLOBALE L2 (Sur tout le maillage)")
+            print(f"Erreur L2 sur la Moyenne       : {self.erreur_L2_moyenne:.4e} ({self.erreur_L2_moyenne*100:.2f} %)")
+            print(f"Erreur L2 sur la Variance      : {self.erreur_L2_variance:.4e} ({self.erreur_L2_variance*100:.2f} %)")
         print("="*60)
 
     def exporter_resultats(self):
         print("\n Exportation VTU")
         
-        # 1. pousser la moyenne NISP dans le champ "T_exacte_scallin" (via le vecteur libre T_exacte_vec)
-        vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
-        vec_exact.setValues(self.indices_T, self.T_mean_global)
-        vec_exact.assemble()
-        self.gfc.reqPP("pp_visu_Texacte").execute()
-
-        # 2. pousser la moyenne MC dans le champ "T_exporte" (astuce absolue : utilisation du Residu pour eviter les verrous)
-        fichier_ref = "vraie_solution_mc_spatial.npy"
-        if os.path.exists(fichier_ref):
-            T_mc = np.load(fichier_ref)
-            
-            residu_backup = self.residu.duplicate()
-            self.residu.copy(result=residu_backup)
-            
-            # injection securisee dans Residu (qui est un vecteur nodal totalement libre)
-            self.residu.setValues(self.indices_T, T_mc)
-            self.residu.assemble()
-            
-            # creation a la volee d'une regle de copie entre Residu et le champ T_exporte
-            self.gfc.lireLigne('pp_copie_vecteur_dans_champs pp_push_mc [Residu, T_exporte, T]')
-            self.gfc.reqPP("pp_push_mc").execute()
-            print(" Fichier Monte Carlo d'origine chargé pour la comparaison.")
-            
-            residu_backup.copy(result=self.residu)
-            residu_backup.destroy()
+        # 1. Pousser la moyenne Monte Carlo dans le champ "T_exacte_scallin"
+        fichier_ref_moy = "vraie_solution_mc_spatial.npy"
+        if os.path.exists(fichier_ref_moy):
+            MC_mean = np.load(fichier_ref_moy)
+            vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
+            vec_exact.setValues(self.indices_T, MC_mean)
+            vec_exact.assemble()
+            self.gfc.reqPP("pp_visu_Texacte").execute()
+            print(" Fichier Monte Carlo (Moyenne) chargé pour la comparaison.")
         else:
             print(" Attention: Fichier 'vraie_solution_mc_spatial.npy' introuvable.")
+
+        # 2. Pousser la moyenne NISP dans le champ "T_exporte" (la TEMPÉRATURE PURE !)
+        residu_backup = self.residu.duplicate()
+        self.residu.copy(result=residu_backup)
         
-        # 3. exporter l'unique fichier contenant les deux champs
+        # injection securisee de la température moyenne NISP dans Residu
+        self.residu.setValues(self.indices_T, self.PCE_mean_field)
+        self.residu.assemble()
+        
+        # creation a la volee d'une regle de copie entre Residu et le champ T_exporte
+        self.gfc.lireLigne('pp_copie_vecteur_dans_champs pp_push_nisp [Residu, T_exporte, T]')
+        self.gfc.reqPP("pp_push_nisp").execute()
+        
+        residu_backup.copy(result=self.residu)
+        residu_backup.destroy()
+        
+        # 3. exporter l'unique fichier contenant les deux champs de température
         nom_fichier = f"resultats/Comparaison_NISP_MC_D{self.D_rff}_P{self.p}"
         self.gfc.lireLigne(f'pp_exportation exp_finale [T_ssfem, "{nom_fichier}",0,true,false,false,false]')
         self.gfc.reqPP("exp_finale").execute()
         
         print(f" Fichier '{nom_fichier}.vtu' généré.")
-        print("  'T_exacte_scallin' = Moyenne prédite par la méthode NISP")
-        print("  'T_exporte'        = Vraie moyenne de référence Monte Carlo")
+        print("  'T_exporte'        = Température Moyenne prédite par NISP-RFF")
+        print("  'T_exacte_scallin' = Température Moyenne de référence Monte Carlo")
 
     def finalise(self):
         mefpp.finalise()

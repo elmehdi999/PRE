@@ -7,6 +7,7 @@
 import numpy as np
 import sys
 import os
+import time
 import glob
 from mefpp4py import mefpp
 import petsc4py
@@ -112,4 +113,7 @@ def monte_carlo_spatial(n_mc=1000):
     mefpp.finalise()
 
 if __name__ == "__main__":
+    start = time.perf_counter()
     monte_carlo_spatial(1000)
+    end = time.perf_counter()
+    print(f"Temps d'exécution : {end - start:.4f} secondes")
