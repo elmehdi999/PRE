@@ -265,7 +265,7 @@ class NISP_RFF:
     def exporter_resultats(self):
         print("\n Exportation VTU")
         
-        # 1. Pousser la moyenne Monte Carlo dans le champ "T_exacte_scallin"
+        # 1. pousser la moyenne MC dans le champ "T_exacte_scallin"
         fichier_ref_moy = "vraie_solution_mc_spatial.npy"
         if os.path.exists(fichier_ref_moy):
             MC_mean = np.load(fichier_ref_moy)
@@ -277,7 +277,7 @@ class NISP_RFF:
         else:
             print(" Attention: Fichier 'vraie_solution_mc_spatial.npy' introuvable.")
 
-        # 2. Pousser la moyenne NISP dans le champ "T_exporte" (la TEMPÉRATURE PURE !)
+        # 2. pousser la moyenne NISP dans le champ "T_exporte"
         residu_backup = self.residu.duplicate()
         self.residu.copy(result=residu_backup)
         
@@ -292,7 +292,7 @@ class NISP_RFF:
         residu_backup.copy(result=self.residu)
         residu_backup.destroy()
         
-        # 3. exporter l'unique fichier contenant les deux champs de température
+        # 3. exporter le fichier contenant les deux champs de température
         nom_fichier = f"resultats/Comparaison_NISP_MC_D{self.D_rff}_P{self.p}"
         self.gfc.lireLigne(f'pp_exportation exp_finale [T_ssfem, "{nom_fichier}",0,true,false,false,false]')
         self.gfc.reqPP("exp_finale").execute()
