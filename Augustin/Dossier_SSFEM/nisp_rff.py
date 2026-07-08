@@ -200,53 +200,38 @@ class NISP_RFF:
                     self.Psi[:, p_idx] *= (val_hermite / norm_factor)
                     
     def regression_omp(self):
-        print("\n Apprentissage Sparse (OMP-CV avec validation croisée) ---")
+        print("\n Apprentissage PCE régularisé (RidgeCV global pour tout le maillage) ---")
+        from sklearn.linear_model import RidgeCV
         
-        # OMP avec validation croisee (cv=5) determinera le nombre de coefficients optimal
+        # 1. Ajustement OMP-CV uniquement sur le point chaud pour l'analyse locale (facultatif/diagnostic)
         omp = OrthogonalMatchingPursuitCV(fit_intercept=False, cv=5)
         omp.fit(self.Psi, self.Y_eval)
         self.coefficients = omp.coef_
         
-        # calcul du champ PCE complet par moindres carres sur le support actif
-        active_indices = np.where(np.abs(self.coefficients) > 1e-10)[0]
-        Psi_active = self.Psi[:, active_indices]
+        # 2. RÉSOLUTION DU VERROU SPATIAL : Régression RidgeCV sur tout le maillage d'un coup
+        # On teste plusieurs paramètres de pénalisation (alpha) par validation croisée
+        alphas = np.logspace(-6, 3, 10)
+        ridge = RidgeCV(alphas=alphas, fit_intercept=False, cv=5)
+        ridge.fit(self.Psi, self.Y_eval_full) # taille : (N_evaluations, N_noeuds)
         
-        # OLS pour tous les noeuds avec rcond=1e-2 pour eviter l'explosion de la variance due a la colinearite
-        c_active_full = np.linalg.lstsq(Psi_active, self.Y_eval_full, rcond=1e-2)[0]
-        self.C_full = np.zeros((self.P_effectif, len(self.indices_T)))
-        self.C_full[active_indices, :] = c_active_full
+        # Les coefficients optimaux pour chaque nœud (P_effectif, N_noeuds)
+        self.C_full = ridge.coef_.T 
         
-        # reconstruction des champs statistiques PCE
-        PCE_mean_field_reconstruit = self.C_full[0, :]
-        PCE_var_field_reconstruit = np.sum(self.C_full[1:, :]**2, axis=0)
+        # 3. EXTRACTION ANALYTIQUE DES MOMENTS DU PCE (Sans aucun bypass empirique !)
+        self.PCE_mean_field = self.C_full[0, :]                 # Coefficient de la constante c_0
+        self.PCE_var_field = np.sum(self.C_full[1:, :]**2, axis=0) # Somme des c_j^2 pour j >= 1
         
-        # Utilisation de la moyenne/variance empiriques robustes pour l'export (comme validé précédemment)
-        T_var_brut_NISP = np.var(self.Y_eval_full, axis=0, ddof=1)
-        self.PCE_mean_field = np.mean(self.Y_eval_full, axis=0)
-        self.PCE_var_field = T_var_brut_NISP
-        
-        t_moyen = self.coefficients[0] 
-        t_var = np.sum(self.coefficients[1:]**2) 
+        # Stats locales au point chaud pour l'affichage
+        t_moyen = self.PCE_mean_field[self.noeud_cible]
+        t_var = self.PCE_var_field[self.noeud_cible]
         
         print("\n")
         print(" RÉSULTATS DU NISP-RFF SUR LE NOEUD CIBLE (Point Chaud)")
         print(f"Moyenne empirique évaluée      : {np.mean(self.Y_eval):.4f} °C")
-        print(f"Espérance E[T] prédite (OMP)   : {t_moyen:.4f} °C")
+        print(f"Espérance E[T] analytique PCE  : {t_moyen:.4f} °C")
+        print(f"Variance Var[T] analytique PCE : {t_var:.4f}")
         
-        ecart = abs(t_moyen - np.mean(self.Y_eval))
-        if ecart > 0.5:
-            print(f"  [!] ATTENTION : écart de {ecart:.2f}°C entre MC empirique et prédiction PCE.")
-            
-        print(f"Variance Var[T] prédite (OMP)  : {t_var:.4f}")
-        
-        if hasattr(omp, 'n_nonzero_coefs_'):
-            n_actifs = omp.n_nonzero_coefs_
-        else:
-            n_actifs = np.count_nonzero(self.coefficients)
-            
-        print(f"Polynômes non-nuls (actifs)    : {n_actifs} / {self.P_effectif}")
-        
-        # calcul de l'erreur L2 globale
+        # calcul de l'erreur L2 globale vs référence
         fichier_ref_moy = "vraie_solution_mc_spatial.npy"
         fichier_ref_var = "variance_mc_spatial.npy"
         

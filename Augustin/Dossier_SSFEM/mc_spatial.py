@@ -114,6 +114,6 @@ def monte_carlo_spatial(n_mc=1000):
 
 if __name__ == "__main__":
     start = time.perf_counter()
-    monte_carlo_spatial(1000)
+    monte_carlo_spatial(100000)
     end = time.perf_counter()
     print(f"Temps d'exécution : {end - start:.4f} secondes")
