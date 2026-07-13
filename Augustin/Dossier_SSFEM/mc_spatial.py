@@ -13,8 +13,8 @@ from mefpp4py import mefpp
 import petsc4py
 from petsc4py import PETSc
 
-def monte_carlo_spatial(n_mc=1000):
-    print(f"--- Demarrage de Monte Carlo ({n_mc} iterations) ---")
+def monte_carlo_spatial(chunk_size=100):
+    print(f"Demarrage de Monte Carlo (Bloc de {chunk_size} iterations)")
     
     petsc4py.init(sys.argv)
     prefixe = "conduction_trou"
@@ -45,13 +45,24 @@ def monte_carlo_spatial(n_mc=1000):
     N_noeuds = T_imp.getSize()
     N_elements = vec_bruit.getSize()
     
-    # optimisation et reproductibilite
-    rng = np.random.default_rng(42) # seed fixe pour reproductibilite
     indices = np.arange(N_elements, dtype=np.int32) 
     
-    # algorithme de welford pour la variance
-    T_mean = np.zeros(N_noeuds)
-    M2 = np.zeros(N_noeuds) # accumulateur pour la variance
+    # checkpointing
+    fichier_etat = "mc_state.npy"
+    if os.path.exists(fichier_etat):
+        etat = np.load(fichier_etat, allow_pickle=True).item()
+        T_mean = etat['T_mean']
+        M2 = etat['M2']
+        iter_debut = etat['iterations_faites']
+        print(f"Reprise du calcul : {iter_debut} itérations déjà calculées.")
+    else:
+        T_mean = np.zeros(N_noeuds)
+        M2 = np.zeros(N_noeuds)
+        iter_debut = 0
+        print("Nouveau calcul : départ à l'itération 0.")
+
+    # graine unique par bloc pour garantir des tirages differents a chaque redemarrage
+    rng = np.random.default_rng(42 + iter_debut)
     
     fd_stdout = sys.stdout.fileno()
     fd_stderr = sys.stderr.fileno()
@@ -59,61 +70,85 @@ def monte_carlo_spatial(n_mc=1000):
     old_stderr = os.dup(fd_stderr)
     devnull = os.open(os.devnull, os.O_WRONLY)
     
-    for i in range(n_mc):
-        bruit = rng.normal(0, 0.3, N_elements)
-        bruit = np.clip(bruit, -0.9, 0.9)
-        
-        vec_bruit.setValues(indices, bruit)
-        vec_bruit.assemble()
-        
-        sys.stdout.flush()
-        sys.stderr.flush()
-        os.dup2(devnull, fd_stdout)
-        os.dup2(devnull, fd_stderr)
-        
-        try:
-            pp_import_bruit.execute()
-            pp_filtre.execute()
-            pp_interpole_K.execute()
-            pp_assemblage.execute()
-            pp_resolution.execute()
-            pp_copie_T.execute()
-        finally:
-            os.dup2(old_stdout, fd_stdout)
-            os.dup2(old_stderr, fd_stderr)
-        
-        # extraction de la temperature
-        T_courant = np.array(T_imp[:])
-        
-        # mise a jour de welford (moyenne et variance)
-        delta = T_courant - T_mean
-        T_mean += delta / (i + 1)
-        delta2 = T_courant - T_mean
-        M2 += delta * delta2
-        
-        # affichage du diagnostic de convergence
-        if (i+1) % 10 == 0:
-            var_estime = M2 / (i + 1)
-            # Erreur standard max sur tout le domaine (sigma / sqrt(N))
-            std_err = np.sqrt(np.max(var_estime) / (i + 1))
-            print(f"Iteration {i+1}/{n_mc} | T_max: {np.max(T_courant):.2f}°C | Err. Standard MC: {std_err:.4e}")
+    iter_actuelle = iter_debut
+
+    try:
+        for i in range(chunk_size):
+            bruit = rng.normal(0, 0.3, N_elements)
+            bruit = np.clip(bruit, -0.9, 0.9)
             
-        # nettoyage automatique des fichiers generes par MEF++ tous les 50 pas
-        if (i+1) % 50 == 0:
-            for f in glob.glob("resultats/T_resultat_ssfem*"):
-                try: os.remove(f)
-                except Exception: pass
+            vec_bruit.setValues(indices, bruit)
+            vec_bruit.assemble()
             
-    T_var = M2 / n_mc
-    np.save("vraie_solution_mc_spatial.npy", T_mean)
-    np.save("variance_mc_spatial.npy", T_var) # sauvegarde de la variance
-    
-    os.close(devnull)
-    print("\nTermine !")
+            sys.stdout.flush()
+            sys.stderr.flush()
+            os.dup2(devnull, fd_stdout)
+            os.dup2(devnull, fd_stderr)
+            
+            try:
+                pp_import_bruit.execute()
+                pp_filtre.execute()
+                pp_interpole_K.execute()
+                pp_assemblage.execute()
+                pp_resolution.execute()
+                pp_copie_T.execute()
+            finally:
+                os.dup2(old_stdout, fd_stdout)
+                os.dup2(old_stderr, fd_stderr)
+            
+            T_courant = np.array(T_imp[:])
+            
+            iter_actuelle = iter_debut + i + 1
+            
+            # mise a jour de welford
+            delta = T_courant - T_mean
+            T_mean += delta / iter_actuelle
+            delta2 = T_courant - T_mean
+            M2 += delta * delta2
+            
+            # affichage console (estimateur sans biais N-1)
+            if iter_actuelle % 10 == 0 and iter_actuelle > 1:
+                var_estime = M2 / (iter_actuelle - 1)
+                std_err = np.sqrt(np.max(var_estime) / iter_actuelle)
+                print(f"Iteration globale {iter_actuelle}, T_max: {np.max(T_courant):.2f}°C, Err. Standard MC: {std_err:.4e}")
+                
+            # nettoyage automatique des fichiers MEF++
+            if iter_actuelle % 50 == 0:
+                for f in glob.glob("resultats/T_resultat_ssfem*"):
+                    try: os.remove(f)
+                    except Exception: pass
+
+    except KeyboardInterrupt:
+        os.dup2(old_stdout, fd_stdout)
+        os.dup2(old_stderr, fd_stderr)
+        print(f"\nArrêt manuel détecté à l'itération {iter_actuelle}.")
+        sys.exit(0)
+                
+    finally:
+        # sauvegarde
+        os.dup2(old_stdout, fd_stdout)
+        os.dup2(old_stderr, fd_stderr)
+        os.close(devnull)
+        
+        if iter_actuelle > iter_debut:
+            etat = {'T_mean': T_mean, 'M2': M2, 'iterations_faites': iter_actuelle}
+            np.save(fichier_etat, etat)
+            
+            if iter_actuelle > 1:
+                T_var = M2 / (iter_actuelle - 1)
+                np.save("vraie_solution_mc_spatial.npy", T_mean)
+                np.save("variance_mc_spatial.npy", T_var) 
+            print(f"État enregistré à l'itération {iter_actuelle}.")
+        
+    print("Fin du processus MEF++ local. Purge de la mémoire vive.")
     mefpp.finalise()
 
 if __name__ == "__main__":
+    chunk = 100
+    if len(sys.argv) > 1:
+        chunk = int(sys.argv[1])
+        
     start = time.perf_counter()
-    monte_carlo_spatial(100000)
+    monte_carlo_spatial(chunk)
     end = time.perf_counter()
-    print(f"Temps d'exécution : {end - start:.4f} secondes")
+    print(f"Temps d'exécution du bloc : {end - start:.4f} secondes")
