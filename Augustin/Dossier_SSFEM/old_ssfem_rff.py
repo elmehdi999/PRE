@@ -1,13 +1,13 @@
 ########################################################################################################
-# Code SSFEM conduction thermique 2D - Version Benchmark Spatial
+# Code SSFEM RFF
 # Auteur: El Mehdi EN-NAHAS 
-# GIREF - Été 2026
 ########################################################################################################
 
 import numpy.random as rd
 import numpy as np
 import sys
 import os
+import math
 from mefpp4py import mefpp
 import petsc4py
 from petsc4py import PETSc
@@ -18,128 +18,137 @@ import matplotlib.pyplot as plt
 
 class ssfem:
     def __init__(self, D_rff, ordrePC):
-        if D_rff < ordrePC:
-            print("Attention : D_rff < ordrePC")
-        
-        self.D_rff = D_rff  # C'est directement le nombre de vagues (ex: 100)
-        self.ordreKL = 2 * D_rff  # La dimension stochastique totale reste le double (cos + sin)
+        self.D_rff = D_rff
+        self.ordreKL = 2 * D_rff  # d = 2D (cos + sin)
         self.ordrePC = ordrePC
+        self.T_assemble = None 
         
-        # 1. On pointe vers le nouveau fichier .champs RFF
+        # calcul de la vraie taille de la base P_total
+        self.P_total = math.comb(self.ordreKL + self.ordrePC, self.ordreKL)
+        
+        print(f"Dimension stochastique (d) : {self.ordreKL}")
+        print(f"Ordre du Chaos (P)         : {self.ordrePC}")
+        print(f"Taille de la base (P_total): {self.P_total}")
+        
+        if self.P_total > 500:
+            print("ATTENTION : P_total est gigantesque")
+            print("Pour tester SSFEM, vous deviez reduire D_rff (ex: 2, 3 ou 4)\n")
+        
         prefixe = "conduction_trou"
         petsc4py.init(sys.argv)
         mefpp.initialise(prefixe)
-        mefpp.litEtExecuteActionsDansCollection()
+        mefpp.litEtExecuteActionsDansCollection() # resolution du probleme deterministe
         collection=mefpp.reqCollectionDeCorps()
         collection.lisDonneesDeBase([prefixe])
         corps=collection.reqCorps(prefixe)
-        gfc = corps.reqGFC()
-        self.gfc = gfc
+        self.gfc = corps.reqGFC()
 
-        # 2. PRISE EN CHARGE RFF : On récupère les "télécommandes" pointant vers la mémoire C++
-        self.champ_wx = gfc.reqChamp("omega_x")
-        self.champ_wy = gfc.reqChamp("omega_y")
-        self.champ_phase = gfc.reqChamp("phase_rff")
+        self.champ_wx = self.gfc.reqChamp("omega_x")
+        self.champ_wy = self.gfc.reqChamp("omega_y")
+        self.champ_phase = self.gfc.reqChamp("phase_rff")
 
-        self.matK = gfc.reqMatricePETSc("MatK").reqMat()
+        self.matK = self.gfc.reqMatricePETSc("MatK").reqMat()
         self.matK.assemble()
-        self.residu = gfc.reqVecteurPETSc("Residu").reqVec()
+        self.residu = self.gfc.reqVecteurPETSc("Residu").reqVec()
         self.residu.assemble()
 
         self.l_matK = []
         
-        print("Récupération des pre-post traitements")                        
-        self.pp_resolution = gfc.reqPP("resolution")
-        self.pp_assemblageMatEtRes = gfc.reqPP("ppAssMatEtRes")
-        self.pp_reinterpole = gfc.reqPP("pp_interpoleK")
+        print("Recuperation des pre-post traitements")                        
+        self.pp_resolution = self.gfc.reqPP("resolution")
+        self.pp_assemblageMatEtRes = self.gfc.reqPP("ppAssMatEtRes")
+        self.pp_reinterpole = self.gfc.reqPP("pp_interpoleK")
 
     def assemblage_premier(self):
-        """
-        Génération RFF et assemblage des matrices avec échelle physique stricte
-        """
         D = self.D_rff 
         l_corr = 0.12
         
-        # Tirage des fréquences spatiales (D lignes, 2 colonnes)
-        self.w = np.random.normal(0, 1.0/l_corr, (D, 2))
+        # meme variance que monte carlo
+        variance_cible = 0.3 
+        facteur_norm = variance_cible * np.sqrt(1.0 / D)
         
-        # Échelle mathématique stricte issue de la théorie de Bochner pour l'écart-type de 8%
-        facteur_norm = 0.08 * np.sqrt(1.0 / D)
+        rng = np.random.default_rng(42)
+        self.w = rng.normal(0, 1.0/l_corr, (D, 2))
         
-        # Apport déterministe (K0)
+        # assemblage MEF++ du terme moyen
         self.pp_assemblageMatEtRes.execute()
         self.l_matK.append(self.matK.copy())
         
         if self.ordreKL == 0:
-            print("Pas d'expansion stochastique")
             return
             
-        # Apport stochastique RFF
         for j in range(D):
-            # On injecte les nouvelles fréquences
             self.champ_wx.asgnValeur(float(self.w[j, 0]))
             self.champ_wy.asgnValeur(float(self.w[j, 1]))
             
-            # --- 1. MATRICE COSINUS ---
-            self.champ_phase.asgnValeur(0.0) # phase = 0, c'est un cosinus
+            # MATRICE COS
+            self.champ_phase.asgnValeur(0.0)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
-            
             mat_cos = self.matK.duplicate()
             self.matK.copy(result=mat_cos)
+            mat_cos.axpy(-1.0, self.l_matK[0])  # purification : retire K_mean
             mat_cos.scale(facteur_norm)
             self.l_matK.append(mat_cos)
-            
-            # --- 2. MATRICE SINUS ---
-            self.champ_phase.asgnValeur(-np.pi / 2.0) # phase = -pi/2, cos(x - pi/2) = sin(x)
+
+            # MATRICE SIN
+            self.champ_phase.asgnValeur(-np.pi / 2.0)
             self.pp_reinterpole.execute()
             self.pp_assemblageMatEtRes.execute()
-            
             mat_sin = self.matK.duplicate()
             self.matK.copy(result=mat_sin)
+            mat_sin.axpy(-1.0, self.l_matK[0])  # purification : retire K_mean
             mat_sin.scale(facteur_norm)
             self.l_matK.append(mat_sin)
               
     def assemblage_second(self):
         dim = self.ordreKL
-        self.K_jk = [[None for _ in range(self.ordrePC+1)] for _ in range(self.ordrePC+1)]
+        self.K_jk = [[None for _ in range(self.P_total)] for _ in range(self.P_total)]
         
-        for j in range(self.ordrePC+1):
-            for k in range(self.ordrePC+1):
+        # optimisation par symetrie (k >= j)
+        for j in range(self.P_total):
+            for k in range(j, self.P_total):
                 self.K_jk[j][k] = self.matK.duplicate()
                 self.K_jk[j][k].zeroEntries()
+                
                 for i in range(dim+1):
                     coeff = p_chaos.calcul_cijk(i,j,k,dim+1)
-                    temp = self.l_matK[i].duplicate()
-                    self.l_matK[i].copy(result=temp)
-                    temp.scale(coeff)
-                    self.K_jk[j][k].axpy(1.0,temp)
+                    if abs(coeff) > 1e-12:
+                        temp = self.l_matK[i].duplicate()
+                        self.l_matK[i].copy(result=temp)
+                        temp.scale(coeff)
+                        self.K_jk[j][k].axpy(1.0, temp)
 
                 self.K_jk[j][k].assemble()
+
+                if j != k:
+                    self.K_jk[k][j] = self.matK.duplicate()
+                    self.K_jk[j][k].copy(result=self.K_jk[k][j])
 
         self.K_assemble = PETSc.Mat().createNest(self.K_jk)
         self.K_assemble.assemble()
 
     def assemblage_F(self):
-        N = self.residu.getSize()
-        # NOTE : Pas de self.pp_resolution.execute() pour protéger l'intégrité du second membre
+        # on utilise le vecteur residu de MEF++
+        N = self.residu.getSize() 
         liste_construction = [self.residu]
 
-        for i in range(self.ordrePC):
+        for i in range(self.P_total - 1):
             new_vec = PETSc.Vec().create()
             new_vec.setSizes(N)
             new_vec.setFromOptions()
             new_vec.set(0.0)
             liste_construction.append(new_vec)
+            
         self.F_assemble = PETSc.Vec().createNest(liste_construction)
         self.F_assemble.setUp()
         self.F_assemble.assemble()
         
     def construction_T(self):
-        N = self.matK.getSize()
+        N = self.matK.getSize()[0] 
         liste_construction = []
 
-        for j in range(self.ordrePC+1):
+        for j in range(self.P_total):
             Tj = PETSc.Vec().createSeq(N)
             Tj.setUp()
             liste_construction.append(Tj)
@@ -155,156 +164,132 @@ class ssfem:
         ksp.setType('minres')
 
         def monitor(ksp, its, rnorm):
-            print(f"iteration {its}: residual norm = {rnorm}")
+            if its % 10 == 0:
+                print(f"iteration {its}: residual norm = {rnorm}")
         ksp.setMonitor(monitor)
 
         try:
-            print(f"Voici taille F : {self.F_assemble.getSize()} et taille T : {self.T_assemble.getSize()}")
+            print(f"Taille matrice bloc K : {self.P_total} x {self.P_total} blocs")
             ksp.solve(self.F_assemble, self.T_assemble)
 
             if ksp.is_converged:
                 print(f"convergence en {ksp.getIterationNumber()} iterations")
-                print(f"Residu final : {ksp.getResidualNorm()}")
             else:
                 print("La resolution n'a pas converge")
-                print(f"Residu final : {ksp.getResidualNorm()}")
                 
             try:
-                # 1. Extraction de la moyenne calculee par SSFEM (Mode 0 du Chaos)
                 T0 = self.T_assemble.getNestSubVecs()[0]
                 valeurs_T0 = np.array(T0.getArray())
-                
-                # 2. Chargement du fichier de reference spatial genere par mc_spatial.py
                 fichier_ref = "vraie_solution_mc_spatial.npy"
                 
                 if os.path.exists(fichier_ref):
                     valeurs_exactes = np.load(fichier_ref)
-                    print(f"DEBUG RESOLUTION: Fichier {fichier_ref} trouve.")
-                    
-                    # 3. Calcul de l'erreur maximale par rapport a la reference absolue
                     if len(valeurs_exactes) == len(valeurs_T0):
                         erreur_max = float(np.max(np.abs(valeurs_T0 - valeurs_exactes)))
-                        print(f"RESULTAT_BENCHMARK_ERREUR={erreur_max}")
-                    else:
-                        print(f"RESULTAT_BENCHMARK_ERREUR=ERREUR_TAILLE_PETSC")
-                else:
-                    print(f"RESULTAT_BENCHMARK_ERREUR=FICHIER_REF_INTROUVABLE")
-                    
+                        print(f"\n---> RESULTAT_BENCHMARK_ERREUR={erreur_max:.5f} <---\n")
             except Exception as e:
-                err_name = type(e).__name__
-                err_msg = str(e).replace(' ', '_').replace('\n', '')
-                print(f"RESULTAT_BENCHMARK_ERREUR=BUG_{err_name}_{err_msg}")
+                print(f"Erreur benchmark : {e}")
                 
         except PETSc.Error as e:
-            print(f"Erreur lors de la resolution : {e}")
+            print(f"Erreur PETSc : {e}")
             
         return self.T_assemble
 
-    def realiser(self):
-        N = self.matK.getSize()
-        dim = self.ordreKL 
-
-        self.realisation = PETSc.Vec().createSeq(N)
-        self.realisation.setUp()
-
-        T0 = self.T_assemble.getNestSubVecs()[0]  
-        T0.copy(result=self.realisation)
-        self.realisation.assemble()
-        
-        # Tirage d'un seul univers physique (évite le bug du multivers)
-        tirage_global = rd.normal(0, 1, dim)
-        liste_tirage_formatee = [tirage_global for _ in range(self.ordrePC)]
-        
-        liste_psi_j = p_chaos.eval_pc_basis(self.ordrePC, dim, liste_tirage_formatee)
-        
-        for j in range(1, self.ordrePC + 1):
-            Tj = self.T_assemble.getNestSubVecs()[j]
-            temp = Tj.duplicate()
-            Tj.copy(result=temp)
-            temp.scale(liste_psi_j[j-1])
-            self.realisation.axpy(1.0, temp)
-            self.realisation.assemble()
-        
-        return self.realisation
+    def injecter_mc_paraview(self):
+        fichier_ref = "vraie_solution_mc_spatial.npy"
+        if os.path.exists(fichier_ref):
+            T_mc = np.load(fichier_ref)
+            vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
+            
+            vec_temp = PETSc.Vec().createSeq(len(T_mc))
+            vec_temp.setUp()
+            vec_temp.setArray(T_mc)
+            vec_temp.assemble()
+            vec_temp.copy(result=vec_exact)
+            vec_exact.assemble()
+            
+            self.gfc.reqPP("pp_visu_Texacte").execute()
 
     def exportation(self):
         self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec() 
         self.realiser().copy(result=self.T_imp)
         self.T_imp.assemble()
         
-        # INJECTION DE LA VRAIE SOLUTION SPATIALE POUR LA CALCULATRICE PARAVIEW
-        fichier_ref = "vraie_solution_mc_spatial.npy"
-        if os.path.exists(fichier_ref):
-            T_mc = np.load(fichier_ref)
-            print(f"DEBUG EXPORT: Chargement de {fichier_ref} reussi. Taille = {len(T_mc)}")
+        self.injecter_mc_paraview()
             
-            # Recuperation du vecteur MEF++
-            vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
-            
-            # Methode de copie robuste via un vecteur sequentiel temporaire (evite les soucis de setValues)
-            vec_temp = PETSc.Vec().createSeq(len(T_mc))
-            vec_temp.setUp()
-            vec_temp.setArray(T_mc)
-            vec_temp.assemble()
-            
-            vec_temp.copy(result=vec_exact)
-            vec_exact.assemble()
-            
-            # Execution de la copie C++ vers le champ
-            self.gfc.reqPP("pp_visu_Texacte").execute()
-            print("DEBUG EXPORT: Transfert vers T_exacte_scallin execute avec succes.")
-        else:
-            print(f"DEBUG EXPORT: Impossible de trouver le fichier {fichier_ref}. Verifie qu'il est bien dans le dossier.")
-            
-        self.gfc.lireLigne(f"""pp_exportation exportation_T [T_ssfem, "resultats/T_realisation_({self.ordreKL},{self.ordrePC})",0,true,false,false,false]""")
-        pp_copie_Timp = self.gfc.reqPP("pp_visualisation_T")
-        pp_exporte = self.gfc.reqPP("exportation_T")
-        pp_copie_Timp.execute()
-        pp_exporte.execute()
-        print("Exportation executee")
-        
+        nom_fichier = f"resultats/T_realisation_({self.D_rff},{self.ordrePC})"
+        self.gfc.lireLigne(f"""pp_exportation exportation_T [T_ssfem, "{nom_fichier}",0,true,false,false,false]""")
+        self.gfc.reqPP("pp_visualisation_T").execute()
+        self.gfc.reqPP("exportation_T").execute()
+        print(f"Exportation Realisation : {nom_fichier}.vtu cree.")
+
     def exporter_statistiques(self):
-        """Calcule et exporte la Moyenne (T0) et la Variance totale sur ParaView"""
-        print("Calcul et exportation de la Moyenne et de la Variance...")
+        print("Calcul et exportation de la Moyenne, de la Variance et de MC...")
         
-        # 1. L'Esperance (Moyenne T0)
+        self.injecter_mc_paraview()
+
         T0 = self.T_assemble.getNestSubVecs()[0]
         self.T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec()
         T0.copy(result=self.T_imp)
         self.T_imp.assemble()
         
-        # On renomme l'export pour ParaView et on l'exécute
-        self.gfc.lireLigne(f"""pp_exportation exp_mean [T_ssfem, "resultats/T_Moyenne",0,true,false,false,false]""")
+        nom_fichier_moyenne = f"resultats/T_Moyenne_({self.D_rff},{self.ordrePC})"
+        self.gfc.lireLigne(f"""pp_exportation exp_mean [T_ssfem, "{nom_fichier_moyenne}",0,true,false,false,false]""")
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_mean").execute()
+        print(f"Exportation Moyenne : {nom_fichier_moyenne}.vtu cree.")
         
-        # 2. La Variance (Somme des Tj^2)
         T_var = T0.duplicate()
         T_var.set(0.0)
         temp = T0.duplicate()
+        dim = self.ordreKL
         
-        for j in range(1, self.ordrePC + 1):
+        for j in range(1, self.P_total):
             Tj = self.T_assemble.getNestSubVecs()[j]
-            temp.pointwiseMult(Tj, Tj) # temp = Tj^2
-            T_var.axpy(1.0, temp)
+            temp.pointwiseMult(Tj, Tj) 
+            
+            norm_j = p_chaos.calcul_cijk(0, j, j, dim + 1)
+            T_var.axpy(norm_j, temp)
             
         T_var.assemble()
         T_var.copy(result=self.T_imp)
         self.T_imp.assemble()
         
-        self.gfc.lireLigne(f"""pp_exportation exp_var [T_ssfem, "resultats/T_Variance",0,true,false,false,false]""")
+        nom_fichier_variance = f"resultats/T_Variance_({self.D_rff},{self.ordrePC})"
+        self.gfc.lireLigne(f"""pp_exportation exp_var [T_ssfem, "{nom_fichier_variance}",0,true,false,false,false]""")
         self.gfc.reqPP("pp_visualisation_T").execute()
         self.gfc.reqPP("exp_var").execute()
+        print(f"Exportation Variance : {nom_fichier_variance}.vtu cree.")
+
+    def realiser(self):
+        N = self.matK.getSize()[0]
+        dim = self.ordreKL 
+
+        self.realisation = PETSc.Vec().createSeq(N)
+        self.realisation.setUp()
+
+        rng_real = np.random.default_rng() 
+        xi = rng_real.normal(0, 1, dim)
         
-        print("Moyenne et Variance exportees avec succes ! Ouvre ParaView.")
+        K_realisation = self.l_matK[0].duplicate()
+        self.l_matK[0].copy(result=K_realisation)
+        for j in range(dim):
+            K_realisation.axpy(xi[j], self.l_matK[j+1])
+        K_realisation.assemble()
+        
+        ksp_mc = PETSc.KSP().create()
+        ksp_mc.setOperators(K_realisation)
+        ksp_mc.setType('preonly')
+        ksp_mc.getPC().setType('lu')
+        
+        # On utilise le vecteur Residu natif de MEF++
+        ksp_mc.solve(self.residu, self.realisation)
+        
+        return self.realisation
 
-    def finalise(self):
-        print("Finalisation du singleton mefpp")
-        mefpp.finalise()
-
-    def mc(self,n_mc,position,affichage=True):
+    def mc(self, n_mc, position, affichage=True):
         if self.T_assemble is None:
-            print("Executer la resolution lineaire d'abord")
+            print("Veuillez executer la resolution lineaire en premier lieu.")
             return None
         
         liste_realisation = []
@@ -322,40 +307,36 @@ class ssfem:
             plt.close()
         return liste_realisation
 
-    def test_ks(self,taille_echantillon, position):
+    def test_ks(self, taille_echantillon, position):
         if self.T_assemble is None:
-            print("Executer la resolution lineaire d'abord")
+            print("Veuillez executer la resolution lineaire en premier lieu.")
             return None
         
-        liste_echantillon = self.mc(taille_echantillon,position,False)
+        liste_echantillon = self.mc(taille_echantillon, position, False)
         variance = np.var(liste_echantillon)
         moyenne = self.T_assemble.getNestSubVecs()[0].getValues(position)
-        print(f"Moyenne : {moyenne}, Variance : {variance}")
+        print(f"Moyenne SSFEM : {moyenne:.4f}, Variance Echantillon : {variance:.4f}")
         
         test_ks = ks_stat.ks(taille_echantillon, moyenne, variance)
         test_ks.setter_echantillon(liste_echantillon)
         calcul = test_ks.kstest()
         test_ks.affichage()
 
+    def finalise(self):
+        mefpp.finalise()
+
 ######################  
 # Exemple d'utilisation
 ######################
 if len(sys.argv) == 3:
     a = ssfem(int(sys.argv[1]), int(sys.argv[2]))
-
     a.assemblage_premier()
     a.assemblage_second()
     a.assemblage_F()
     a.construction_T()
-    
-    # 1. Resolution du chaos polynomial (RFF)
     T = a.resolution_lineaire()
     
-    # 2. Exportation d'une realisation classique
     a.exportation()
-    
-    # 3. Exporte les cartes lisses de la moyenne et la variance
     a.exporter_statistiques()
-    
-    # 4. Test statistique sur le noeud 500
     a.test_ks(100, 500)
+    a.finalise()
