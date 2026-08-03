@@ -4,7 +4,7 @@ import numpy as np
 import sys
 import time
 
-OBJECTIF_FINAL = 100000
+OBJECTIF_FINAL = 10000
 TAILLE_BLOC = 100       # MEF++ sera relance toutes les 1000 iterations
 FICHIER_ETAT = "mc_state.npy"
 

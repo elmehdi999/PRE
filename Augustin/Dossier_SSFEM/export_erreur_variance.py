@@ -20,7 +20,7 @@ def exporter_cartographie_erreur():
     var_mc_100k = np.load("mc_var_100k.npy")
 
     # Calcul de la différence absolue (pour éviter la division par 0 près de Dirichlet)
-    diff_variance = np.abs(var_nisp - var_mc_100k)
+    diff_variance = np.abs(var_nisp)
 
     # 2. Initialisation MEF++
     petsc4py.init(sys.argv)

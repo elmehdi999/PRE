@@ -1,8 +1,3 @@
-########################################################################################################
-# Code NISP (Non-Intrusive Sparse Polynomial Chaos) - Conduction thermique 2D RFF
-# Auteur: El Mehdi EN-NAHAS 
-########################################################################################################
-
 import numpy as np
 import sys
 import math
@@ -14,7 +9,7 @@ import warnings
 from scipy.stats import qmc
 from scipy.stats import norm
 import numpy.polynomial.hermite_e as hermite_e 
-from sklearn.linear_model import OrthogonalMatchingPursuitCV
+from sklearn.linear_model import OrthogonalMatchingPursuit, OrthogonalMatchingPursuitCV
 from mefpp4py import mefpp
 import petsc4py
 from petsc4py import PETSc
@@ -26,26 +21,21 @@ class NISP_RFF:
         self.D_rff = D_rff
         self.d = 2 * D_rff 
         self.p = ordrePC   
-        self.N_evaluations = N_evaluations #
+        self.N_evaluations = N_evaluations 
         
         self.P_total = math.comb(self.d + self.p, self.d)
         self.erreur_L2_moyenne = None
         self.erreur_L2_variance = None
         
-        print(" INITIALISATION NISP-RFF (RÉGRESSION SPARSE OMP-CV)\n")
+        print(" Initialisation NISP-RFF\n")
         print(f"Ondes RFF (D)            : {self.D_rff}")
-        print(f"Ordre du Chaos (P)          : {self.p}")
+        print(f"Ordre du Chaos (P)       : {self.p}")
         print(f"Taille théorique (P_total)  : {self.P_total}")
         print(f"Evaluations cibles MEF++ (N): {self.N_evaluations}\n")
         
-        # nettoyage console
-        opts = PETSc.Options()
-        for opt in ['options_slinksp_atol', 'options_slinksp_divtol', 'options_slinksp_max_it', 'options_slinksp_rtol']:
-            if opts.hasName(opt):
-                opts.delValue(opt)
-
-        prefixe = "conduction_trou" # a remplacer pour chaque probleme
         petsc4py.init(sys.argv)
+
+        prefixe = "carre" 
         mefpp.initialise(prefixe)
         mefpp.litEtExecuteActionsDansCollection()
         collection = mefpp.reqCollectionDeCorps()
@@ -56,7 +46,6 @@ class NISP_RFF:
         self.vecteur_T_imp = self.gfc.reqVecteurPETSc("T_imp").reqVec()
         self.vec_K = self.gfc.reqVecteurPETSc("K_imp").reqVec()
         
-        # definition des index des l'initialisation
         self.indices_K = np.arange(self.vec_K.getSize(), dtype=np.int32)
         self.indices_T = np.arange(self.vecteur_T_imp.getSize(), dtype=np.int32)
         
@@ -65,33 +54,36 @@ class NISP_RFF:
         
         self.pp_assemblage = self.gfc.reqPP("ppAssMatEtRes")
         self.pp_import_K = self.gfc.reqPP("pp_import_K")
-        self.pp_resolution = self.gfc.reqPP("resolution")
         self.pp_copie_T = self.gfc.reqPP("pp_copie_T_imp")
+
+        self.pp_copie_T.execute()
+        T_init = self.vecteur_T_imp.getValues(self.indices_T).copy()
+        self.noeud_cible = int(np.argmax(T_init))
+        print(f" Noeud d'intérêt ciblé sur le point chaud (Temp. initiale = {T_init[self.noeud_cible]:.2f}°C)")
         
-        # extraction des coordonnees spatiales
         self.gfc.reqPP("pp_copie_X_elem").execute()
         self.gfc.reqPP("pp_copie_Y_elem").execute()
         
         vec_x_petsc = self.gfc.reqVecteurPETSc("Vec_X_elem").reqVec()
         vec_y_petsc = self.gfc.reqVecteurPETSc("Vec_Y_elem").reqVec()
         
-        self.X_elem = vec_x_petsc.getValues(self.indices_K)
-        self.Y_elem = vec_y_petsc.getValues(self.indices_K)
+        self.X_elem = vec_x_petsc.getValues(self.indices_K).copy()
+        self.Y_elem = vec_y_petsc.getValues(self.indices_K).copy()
         print(f" Coordonnées extraites pour {len(self.X_elem)} éléments.")
 
-    def initialiser_frequences(self):
+    def initialiser_frequences(self, l_corr_override=None):
         print("\n Initialisation des fréquences RFF")
-        l_corr = 0.12
+        l_corr = l_corr_override if l_corr_override is not None else 0.12
+        print(f" Utilisation de l_corr = {l_corr}")
+        
         rng = np.random.default_rng(42)
         self.w = rng.normal(0, 1.0/l_corr, (self.D_rff, 2))
         
-        # --- RETOUR AU CALIBRAGE SCALAIRE (La limite optimale physique validée) ---
         self.facteur_norm = 0.0401 * np.sqrt(1.0 / self.D_rff)
         
         phases = self.w[:, [0]] * self.X_elem + self.w[:, [1]] * self.Y_elem
         self.cos_phases = np.cos(phases)
         self.sin_phases = np.sin(phases)
-        
         print("Fréquences générées.")
 
     def generer_plan_experience(self):
@@ -102,18 +94,6 @@ class NISP_RFF:
         
     def evaluer_boite_noire(self):
         print("\n Evaluation MEF++")
-        
-        K_init = np.ones_like(self.X_elem)
-        self.vec_K.setValues(self.indices_K, K_init)
-        self.vec_K.assemble()
-        self.pp_import_K.execute()
-        
-        self.pp_assemblage.execute()
-        self.pp_resolution.execute()
-        self.pp_copie_T.execute()
-        T_ref = self.vecteur_T_imp.getValues(self.indices_T)
-        self.noeud_cible = np.argmax(T_ref)
-        print(f" Noeud d'intérêt ciblé sur le point chaud (Temp. initiale = {T_ref[self.noeud_cible]:.2f}°C)")
         
         self.Y_eval = np.zeros(self.N_evaluations)
         self.Y_eval_full = np.zeros((self.N_evaluations, len(self.indices_T))) 
@@ -142,19 +122,25 @@ class NISP_RFF:
             os.dup2(devnull, fd_stderr)
             try:
                 self.pp_assemblage.execute() 
-                self.pp_resolution.execute()
+                
+                nom_sol = f"Sol_NISP_{i}"
+                nom_res = f"Res_NISP_{i}"
+                self.gfc.lireLigne(f'solveur_lin {nom_sol}(ProbDida) prefixe_options options_slin')
+                self.gfc.lireLigne(f'pp_resolution_probleme {nom_res} [ProbDida,{nom_sol}(ProbDida)]')
+                self.gfc.reqPP(nom_res).execute()
+                
                 self.pp_copie_T.execute()
             finally:
                 os.dup2(old_stdout, fd_stdout)
                 os.dup2(old_stderr, fd_stderr)
             
-            T_courant = self.vecteur_T_imp.getValues(self.indices_T)
+            T_courant = self.vecteur_T_imp.getValues(self.indices_T).copy()
             self.Y_eval[i] = T_courant[self.noeud_cible]
             self.Y_eval_full[i, :] = T_courant 
             self.T_mean_global += T_courant / self.N_evaluations
             
             if (i+1) % 50 == 0:
-                print(f"  [{i+1}/{self.N_evaluations}] Évaluations terminées... (T_max = {self.Y_eval[i]:.2f}°C)")
+                print(f"  [{i+1}/{self.N_evaluations}] Évaluations terminées (T_max = {self.Y_eval[i]:.2f}°C)")
                 for f in glob.glob("resultats/T_resultat_ssfem*.*"):
                      try: os.remove(f)
                      except Exception: pass
@@ -165,7 +151,7 @@ class NISP_RFF:
         np.save(f"vraie_solution_NISP_D{self.D_rff}.npy", self.T_mean_global)
                 
     def generer_multi_indices(self, q=0.75):
-        print(f"\n Construction de la base PC (troncature hyperbolique q={q}) ---")
+        print(f"\n Construction de la base PC (troncature hyperbolique q={q}) ")
         indices = []
         for c in itertools.combinations(range(self.d + self.p), self.d):
             idx = tuple([c[0]] + [c[i] - c[i-1] - 1 for i in range(1, self.d)])
@@ -189,72 +175,110 @@ class NISP_RFF:
                     val_hermite = hermite_e.hermeval(self.Xi[:, j], coef)
                     norm_factor = np.sqrt(math.factorial(alpha[j]))
                     self.Psi[:, p_idx] *= (val_hermite / norm_factor)
-                    
+
     def regression_omp(self):
-        print("\n Apprentissage Sparse (OMP-CV avec validation croisée) ---")
+        print("\n Apprentissage sparse ")
         
-        # OMP avec validation croisee (cv=5) determinera le nombre de coefficients optimal
-        omp = OrthogonalMatchingPursuitCV(fit_intercept=False, cv=5)
-        omp.fit(self.Psi, self.Y_eval)
-        self.coefficients = omp.coef_
-        
-        # Le calcul analytique spatial OLS explosant (erreur > 15000% due au mauvais conditionnement spatial),
-        # nous utilisons l'estimateur empirique de l'échantillon LHS pour le champ global, 
-        # comme détaillé et assumé dans le rapport de stage (Section 5.4).
-        self.PCE_mean_field = np.mean(self.Y_eval_full, axis=0)
-        self.PCE_var_field = np.var(self.Y_eval_full, axis=0, ddof=1)
-        
-        t_moyen = self.coefficients[0] 
-        t_var = np.sum(self.coefficients[1:]**2) 
-        
-        print("\n RÉSULTATS DU NISP-RFF SUR LE NOEUD CIBLE (Point Chaud)")
-        print(f"Moyenne empirique LHS          : {np.mean(self.Y_eval):.4f} °C")
-        print(f"Espérance E[T] prédite (OMP)   : {t_moyen:.4f} °C")
-        print(f"Variance Var[T] prédite (OMP)  : {t_var:.4f}")
-        print(f"Polynômes actifs               : {np.count_nonzero(self.coefficients)} / {self.P_effectif}")
-        
-        # calcul de l'erreur L2 globale vs référence
-        fichier_ref_moy = "mc_mean_1000.npy"
-        fichier_ref_var = "mc_var_1000.npy"
-        
-        if os.path.exists(fichier_ref_moy) and os.path.exists(fichier_ref_var):
-            MC_mean = np.load(fichier_ref_moy)
-            MC_var = np.load(fichier_ref_var)
+        if getattr(self, 'noeud_cible', None) is None:
+            self.noeud_cible = int(np.argmax(np.mean(self.Y_eval_full, axis=0)))
             
+        if getattr(self, 'Y_eval', None) is None or np.max(self.Y_eval) == 0:
+            self.Y_eval = self.Y_eval_full[:, self.noeud_cible]
+            
+        Y_target = self.Y_eval_full[:self.N_evaluations, :]
+        
+        print(" Recherche automatique du nombre optimal de termes (OMP-CV)...")
+        # On limite le nombre d'atomes au strict minimum entre :
+        # 1. Le nombre de polynômes candidats disponibles (Psi.shape[1])
+        # 2. La taille des données d'entraînement dans un pli de cross-validation (80% de N)
+        n_features = self.Psi.shape[1]
+        n_samples_cv = int(0.8 * self.N_evaluations) # Pour cv=5
+        max_termes = min(n_features, n_samples_cv)
+
+        omp_cv = OrthogonalMatchingPursuitCV(cv=5, max_iter=max_termes, n_jobs=-1)
+        omp_cv.fit(self.Psi, self.Y_eval[:self.N_evaluations])
+        
+        indices_actifs_cv = np.where(np.abs(omp_cv.coef_) > 1e-10)[0]
+        n_opt = len(indices_actifs_cv)
+        if n_opt == 0: n_opt = 1
+        print(f" L'algorithme CV a retenu {n_opt} termes optimaux.")
+        
+        print(" OMP-Multi-Sorties globale ")
+        omp_global = OrthogonalMatchingPursuit(n_nonzero_coefs=n_opt, fit_intercept=False)
+        omp_global.fit(self.Psi, Y_target)
+        self.coefficients = omp_global.coef_ 
+        
+        self.PCE_mean_field = self.coefficients[:, 0]
+        self.PCE_var_field = np.sum(self.coefficients[:, 1:]**2, axis=1)
+        
+        t_moyen = self.PCE_mean_field[self.noeud_cible] 
+        t_var = self.PCE_var_field[self.noeud_cible] 
+        
+        print("\n Résultats analytiques de NISP-RFF sur le noeud cible")
+        print(f"Moyenne empirique LHS          : {np.mean(self.Y_eval[:self.N_evaluations]):.4f} °C")
+        print(f"Espérance E[T] analytique      : {t_moyen:.4f} °C")
+        print(f"Variance Var[T] analytique     : {t_var:.4f}")
+        """
+        if os.path.exists("mc_mean_10k.npy") and os.path.exists("mc_var_10k.npy"):
+            MC_mean = np.load("mc_mean_10k.npy")
+            MC_var = np.load("mc_var_10k.npy")
+            ref_utilisee = "10k"
+        elif os.path.exists("mc_mean_100k.npy") and os.path.exists("mc_var_100k.npy"):
+            MC_mean = np.load("mc_mean_100k.npy")
+            MC_var = np.load("mc_var_100k.npy")
+            ref_utilisee = "100k"
+        elif os.path.exists("vraie_solution_mc_spatial.npy") and os.path.exists("variance_mc_spatial.npy"):
+            MC_mean = np.load("vraie_solution_mc_spatial.npy")
+            MC_var = np.load("variance_mc_spatial.npy")
+            ref_utilisee = "100k"
+        else:
+            MC_mean, MC_var, ref_utilisee = None, None, None
+        """
+        MC_mean = None
+        MC_var = None
+        ref_utilisee = None
+        
+        if MC_mean is not None:
             self.erreur_L2_moyenne = np.linalg.norm(self.PCE_mean_field - MC_mean) / np.linalg.norm(MC_mean)
             self.erreur_L2_variance = np.linalg.norm(self.PCE_var_field - MC_var) / np.linalg.norm(MC_var)
             
-            print("\n ERREUR SPATIALE GLOBALE L2 (Sur tout le maillage)")
-        print(f"Erreur L2 sur la Moyenne       : {self.erreur_L2_moyenne:.4e} ({self.erreur_L2_moyenne*100:.2f} %)")
-        print(f"Erreur L2 sur la Variance      : {self.erreur_L2_variance:.4e} ({self.erreur_L2_variance*100:.2f} %)")
-        print("="*60)
+            print(f"\n Erreur spatiale globale L2 (Face à réf. {ref_utilisee})")
+            print(f"Erreur L2 sur la Moyenne       : {self.erreur_L2_moyenne:.4e} ({self.erreur_L2_moyenne*100:.2f} %)")
+            print(f"Erreur L2 sur la Variance      : {self.erreur_L2_variance:.4e} ({self.erreur_L2_variance*100:.2f} %)")
+            print("="*60)
 
-        # exportation du support sparse pour ssfem
-        indices_actifs = np.nonzero(self.coefficients)[0]
-        # On s'assure que le mode 0 (esperance) est toujours inclus car Galerkin en a besoin
+        print("\n OMP Mono-Nœud (Préparation de la base pour SSFEM-Sparse)")
+        indices_actifs = indices_actifs_cv
+        
         if 0 not in indices_actifs:
             indices_actifs = np.insert(indices_actifs, 0, 0)
-            indices_actifs = np.sort(indices_actifs)
+        indices_actifs = np.sort(indices_actifs)
             
-        # on exporte la definition exacte des polynômes (les multi-indices)
         active_multi_indices = np.array([self.multi_indices[idx] for idx in indices_actifs], dtype=np.int16)
         np.save("support_sparse.npy", active_multi_indices)
         
-        print(f"\n[EXPORT] Support sparse sauvegardé ({len(indices_actifs)} polynômes actifs) pour l'hybridation SSFEM.")
+        print(f"\ Support sparse strict sauvegardé ({len(indices_actifs)} polynômes actifs).")
 
     def exporter_resultats(self):
-        print("\n Exportation VTU")
-        
-        fichier_ref_moy = "mc_mean_1000.npy"
-        if os.path.exists(fichier_ref_moy):
-            MC_mean = np.load(fichier_ref_moy)
+        print("\n Exportation fichier .vtu")
+        """
+        if os.path.exists("mc_mean_10k.npy"):
+            MC_mean = np.load("mc_mean_10k.npy")
+        elif os.path.exists("vraie_solution_mc_spatial.npy"):
+            MC_mean = np.load("vraie_solution_mc_spatial.npy")
+        else:
+            MC_mean = None
+        """
+        MC_mean = None
+    
+        if MC_mean is not None:
             vec_exact = self.gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
             vec_exact.setValues(self.indices_T, MC_mean)
             vec_exact.assemble()
             self.gfc.reqPP("pp_visu_Texacte").execute()
             print(" Fichier Monte Carlo (Moyenne) chargé pour la comparaison.")
         else:
-            print(" Attention: Fichier 'mc_mean_1000.npy' introuvable.")
+            print(" Attention: Fichier MC introuvable pour la comparaison.")
 
         residu_backup = self.residu.duplicate()
         self.residu.copy(result=residu_backup)
@@ -273,23 +297,32 @@ class NISP_RFF:
         self.gfc.reqPP("exp_finale").execute()
         
         print(f" Fichier '{nom_fichier}.vtu' généré.")
-        print("  'T_exporte'        = Température Moyenne prédite par NISP-RFF (~19.14°C)")
-        print("  'T_exacte_scallin' = Température Moyenne de référence Monte Carlo (~19.15°C)")
 
     def finalise(self):
         mefpp.finalise()
 
 if __name__ == "__main__":
-    if len(sys.argv) == 4:
-        nisp = NISP_RFF(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
-        nisp.initialiser_frequences()
+    if len(sys.argv) >= 4:
+        D = int(sys.argv[1])
+        P = int(sys.argv[2])
+        N = int(sys.argv[3])
+        l_corr_val = float(sys.argv[4]) if len(sys.argv) == 5 else None
+
+        nisp = NISP_RFF(D, P, N)
+        nisp.initialiser_frequences(l_corr_val)
         nisp.generer_plan_experience()
-        nisp.evaluer_boite_noire() 
+        
+        l_cache_str = f"_lcorr{l_corr_val}" if l_corr_val is not None else ""
+        cache = f"Y_eval_full_D{D}_N{N}{l_cache_str}.npy"
+        
+        nisp.evaluer_boite_noire()
+        np.save(cache, {'Y_eval_full': nisp.Y_eval_full, 'Xi': nisp.Xi})
+            
         nisp.generer_multi_indices(q=0.75)  
         nisp.evaluer_polynomes_hermite()
         nisp.regression_omp()
         nisp.exporter_resultats()  
         nisp.finalise()
     else:
-        print("Usage : python nisp_rff.py <D_rff> <Ordre_P> <N_evaluations>")
-        print("Exemple : python nisp_rff.py 20 3 500")
+        print("Usage : python nisp_rff.py <D_rff> <Ordre_P> <N_evaluations> [l_corr_optionnel]")
+        print("Exemple : python nisp_rff.py 30 3 1024 0.12")

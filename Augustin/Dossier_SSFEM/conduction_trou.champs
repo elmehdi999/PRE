@@ -38,8 +38,8 @@ scalaire F_intermediaire 0
 scallin F2 0
 scallin F3 0
 
-scalaire K_intermediaire 1  
-scalconstelem K 1
+scalaire K_intermediaire 10  
+scalconstelem K 10
 
 # Comme on n'a plus de solution analytique pour ce problème complexe, on la met à 0
 # pour éviter que le script Python ne plante quand il la cherche !
@@ -191,7 +191,7 @@ pp_reinterpole pp_interpole_K_spatial [K, K_spatial_formule]
 
   # La température est ancrée à 0 sur l'extérieur
   scalaire cond_ext   0.0
-  # On injecte une puissance thermique de 100 W/m² dans le trou
+  # On injecte une puissance thermique de 100 W/m dans le trou
   scalaire flux_trou  100.0
   
   # L'extérieur dissipe la chaleur (ancrage = pas de matrice singulière)

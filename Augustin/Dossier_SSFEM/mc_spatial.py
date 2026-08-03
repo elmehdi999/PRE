@@ -1,6 +1,5 @@
 ################################################################################
-# Monte Carlo par convolution
-# Utilisation de la resolution native MEF++ pour garantir la physique
+# Monte Carlo par convolution (Version Définitive - Solveur Dynamique)
 # Auteur : El Mehdi En-Nahas
 ################################################################################
 
@@ -13,17 +12,14 @@ from mefpp4py import mefpp
 import petsc4py
 from petsc4py import PETSc
 
-def monte_carlo_spatial(chunk_size=100):
+def monte_carlo_spatial(chunk_size=1000):
     print(f"Demarrage de Monte Carlo (Bloc de {chunk_size} iterations)")
     
     petsc4py.init(sys.argv)
     prefixe = "conduction_trou"
     mefpp.initialise(prefixe)
-    
-    # resolution initiale deterministe pour initialiser la memoire
     mefpp.litEtExecuteActionsDansCollection()
     
-    # suppression dynamiquement l'option de monitoring KSP
     opts = PETSc.Options()
     if opts.hasName('options_slinksp_monitor'):
         opts.delValue('options_slinksp_monitor')
@@ -31,7 +27,6 @@ def monte_carlo_spatial(chunk_size=100):
     corps = mefpp.reqCollectionDeCorps().reqCorps(prefixe)
     gfc = corps.reqGFC()
 
-    # handles PETSc et MEF++
     vec_bruit = gfc.reqVecteurPETSc("vec_bruit_blanc").reqVec()
     T_imp = gfc.reqVecteurPETSc("T_imp").reqVec()
     
@@ -39,15 +34,12 @@ def monte_carlo_spatial(chunk_size=100):
     pp_filtre = gfc.reqPP("applique_filtre_gaussien")
     pp_interpole_K = gfc.reqPP("pp_interpole_K_spatial")
     pp_assemblage = gfc.reqPP("ppAssMatEtRes")
-    pp_resolution = gfc.reqPP("resolution")
     pp_copie_T = gfc.reqPP("pp_copie_T_imp")
     
     N_noeuds = T_imp.getSize()
     N_elements = vec_bruit.getSize()
-    
     indices = np.arange(N_elements, dtype=np.int32) 
     
-    # checkpointing
     fichier_etat = "mc_state.npy"
     if os.path.exists(fichier_etat):
         etat = np.load(fichier_etat, allow_pickle=True).item()
@@ -61,7 +53,6 @@ def monte_carlo_spatial(chunk_size=100):
         iter_debut = 0
         print("Nouveau calcul : départ à l'itération 0.")
 
-    # graine unique par bloc pour garantir des tirages differents a chaque redemarrage
     rng = np.random.default_rng(42 + iter_debut)
     
     fd_stdout = sys.stdout.fileno()
@@ -90,33 +81,32 @@ def monte_carlo_spatial(chunk_size=100):
                 pp_filtre.execute()
                 pp_interpole_K.execute()
                 pp_assemblage.execute()
-                pp_resolution.execute()
+                
+                # LE HACK ABSOLU : Force la création d'un nouveau solveur
+                nom_sol = f"Sol_MC_{i}"
+                nom_res = f"Res_MC_{i}"
+                gfc.lireLigne(f'solveur_lin {nom_sol}(ProbDida) prefixe_options options_slin')
+                gfc.lireLigne(f'pp_resolution_probleme {nom_res} [ProbDida,{nom_sol}(ProbDida)]')
+                gfc.reqPP(nom_res).execute()
+                
                 pp_copie_T.execute()
             finally:
                 os.dup2(old_stdout, fd_stdout)
                 os.dup2(old_stderr, fd_stderr)
             
             T_courant = np.array(T_imp[:])
-            
             iter_actuelle = iter_debut + i + 1
             
-            # mise a jour de welford
             delta = T_courant - T_mean
             T_mean += delta / iter_actuelle
             delta2 = T_courant - T_mean
             M2 += delta * delta2
             
-            # affichage console (estimateur sans biais N-1)
-            if iter_actuelle % 10 == 0 and iter_actuelle > 1:
-                var_estime = M2 / (iter_actuelle - 1)
-                std_err = np.sqrt(np.max(var_estime) / iter_actuelle)
+            # Affichage de contrôle (Vérifie que T saute bien direct à 20°C !)
+            if iter_actuelle <= 3 or iter_actuelle % 100 == 0:
+                var_estime = M2 / (iter_actuelle - 1) if iter_actuelle > 1 else np.zeros_like(M2)
+                std_err = np.sqrt(np.max(var_estime) / iter_actuelle) if iter_actuelle > 1 else 0
                 print(f"Iteration globale {iter_actuelle}, T_max: {np.max(T_courant):.2f}°C, Err. Standard MC: {std_err:.4e}")
-                
-            # nettoyage automatique des fichiers MEF++
-            if iter_actuelle % 50 == 0:
-                for f in glob.glob("resultats/T_resultat_ssfem*"):
-                    try: os.remove(f)
-                    except Exception: pass
 
     except KeyboardInterrupt:
         os.dup2(old_stdout, fd_stdout)
@@ -125,7 +115,6 @@ def monte_carlo_spatial(chunk_size=100):
         sys.exit(0)
                 
     finally:
-        # sauvegarde
         os.dup2(old_stdout, fd_stdout)
         os.dup2(old_stderr, fd_stderr)
         os.close(devnull)
@@ -144,7 +133,7 @@ def monte_carlo_spatial(chunk_size=100):
     mefpp.finalise()
 
 if __name__ == "__main__":
-    chunk = 100
+    chunk = 1000
     if len(sys.argv) > 1:
         chunk = int(sys.argv[1])
         

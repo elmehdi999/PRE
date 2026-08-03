@@ -1,0 +1,223 @@
+//+************************************************************************
+// --- Logiciel MEF++
+// --- Fichier adaptatif : Le Carré Analytique
+//+************************************************************************
+booleen GIREF_AJOUTE_PILE_APPEL_ERMSG false
+booleen GIREF_VERBOSE_SOLVEUR false
+booleen GIREF_MODE_VERBOSE_CHRONO 0
+booleen GIREF_COMPILE_EXPALG false
+booleen GIREF_MAPLE_OPTIMISE_EXPALG false
+
+################################################################################
+# 1. GÉOMÉTRIE ET MAILLAGE
+################################################################################
+
+# Le maillage est chargé automatiquement par l'initialisation Python "carre"
+
+champgeolin champgeo
+
+problemeef ProbDida
+problemeef ProbFactice
+problemeef ProbFactice2
+problemeef ProbFactice3
+
+################################################################################
+# 2. DÉCLARATION DES CHAMPS ET VARIABLES
+################################################################################
+scallin T        0
+scallin T_exacte_scallin 0
+scallin T_exporte 1
+scallin test 1
+
+scalaire F 0
+scalaire F_intermediaire 0
+scallin F2 0
+scallin F3 0
+
+scalaire K_intermediaire 1.0
+
+scalconstelem K 1.0
+
+# LA SOLUTION MATHÉMATIQUE EXACTE (Pour K=1)
+
+scalaire T_exacte f(x,y,z)=0.0274595333107*sin(3.14159265359*x)*sinh(3.14159265359*y)
+
+# Variables de la méthode RFF (fréquences spatiales)
+
+scalaire omega_x 0.0
+scalaire omega_y 0.0
+scalaire phase_rff 0.0
+
+# Termes pour la formulation trigonométrique RFF
+
+scalaire K_intermediaire2 f(K_intermediaire, omega_x, omega_y, phase_rff)=K_intermediaire*cos(omega_x*x + omega_y*y + phase_rff)
+to2sym Z [0,0,0,0,0,0]
+
+# Paramètres d'importation vers Python
+
+vecteur T_imp [ProbDida, "colonne"]
+vecteur T_exacte_vec [ProbDida, "colonne"]
+vecteur K_imp [ProbFactice, "colonne"]
+vecteur F_imp [ProbFactice2, "colonne"]
+
+scalquad X 0
+
+{ options_prefixees_petsc MatK
+mat_type aij
+}
+matrice MatK       [ProbDida]
+matrice MatKbis    [ProbDida]
+vecteur Residu     [ProbDida, "colonne"]
+vecteur Residu2    [ProbDida, "ligne"]
+
+################################################################################
+# 3. EXPORTATIONS PARAVIEW
+################################################################################
+{exportation              export_TK
+format_exportation VTK
+asgnDegreInterpolation Exportation::eMAILLAGE_LINEAIRE
+asgnExporteToujoursMaillage faux
+ajouteChamp   T
+ajouteChamp   K
+ajouteChamp T_exacte_scallin
+ajouteChamp F
+prefixe_sorties $CheminAccesExport$/resultat
+}
+pp_exportation exportation_TK [export_TK, "resultats/carre_analytique",2,true,false,false,false]
+
+{exportation        T_ssfem
+format_exportation VTK
+ajouteChamp T_exporte
+ajouteChamp T_exacte_scallin
+prefixe_sorties $CheminAccesExport$/resultat
+}
+
+################################################################################
+# 4. OPÉRATEURS DE PRÉ-POST TRAITEMENT
+################################################################################
+pp_reinterpole pp_interpoleK [K, K_intermediaire2]
+pp_reinterpole pp_interpoleTexacte [T_exacte_scallin, T_exacte]
+pp_reinterpole pp_interpoleF [F, F_intermediaire]
+
+pp_copie_champ_dans_vecteur pp_copie_T_imp [T,T_imp,T]
+pp_copie_champ_dans_vecteur pp_copie_Texacte_vec [T_exacte_scallin, T_exacte_vec, T]
+pp_copie_champ_dans_vecteur pp_copie_K_imp [K,K_imp,K]
+pp_copie_champ_dans_vecteur pp_copie_F_imp [F, F_imp, F]
+
+pp_copie_vecteur_dans_champs pp_visualisation_T    [T_imp, T_exporte, T]
+pp_copie_vecteur_dans_champs pp_visu_Texacte [T_exacte_vec, T_exacte_scallin, T]
+
+pp_assemble ppAssMatK     [ProbDida,MatK]
+pp_assemble ppAssRes      [ProbDida, Residu]
+pp_assemble ppAssMatEtRes   [ProbDida, MatK, Residu]
+
+{ ParamSchema
+scalaire ptintgarete               2
+scalaire ptintgface3               3
+scalaire ptintgface4               2
+scalaire ptintgelement1d           2
+scalaire ptintgtriangle            12
+scalaire ptintgquadrangle          2
+scalaire ptintgtetra               5
+scalaire ptintgprismetri_legendre  2
+scalaire ptintgprismetri_triangle  3
+scalaire ptintghexa                2
+}
+schemaintg schema_intg ParamSchema
+
+{ options_prefixees_petsc options_slin
+ksp_type preonly
+pc_type lu
+ksp_atol 1e-20
+ksp_rtol 1e-12
+ksp_divtol 1e30
+ksp_max_it 4000
+ksp_monitor
+}
+
+{ solveur_lin Solveur(ProbDida)
+prefixe_options options_slin
+}
+pp_resolution_probleme resolution [ProbDida,Solveur(ProbDida)]
+
+# EXTRACTION COORDONNEES & INJECTION NISP
+
+scalconstelem coord_x_elem x
+scalconstelem coord_y_elem y
+
+vecteur Vec_X_elem [ProbFactice, "colonne"]
+vecteur Vec_Y_elem [ProbFactice, "colonne"]
+
+pp_copie_champ_dans_vecteur pp_copie_X_elem [coord_x_elem, Vec_X_elem, K]
+pp_copie_champ_dans_vecteur pp_copie_Y_elem [coord_y_elem, Vec_Y_elem, K]
+
+pp_copie_vecteur_dans_champs pp_import_K [K_imp, K, K]
+
+# =======================================================
+
+// =======================================================
+// Nouveaux elements pour le Monte Carlo Spatial
+// =======================================================
+// Memoire pour le bruit
+scalconstelem bruit_blanc 0
+scalconstelem bruit_filtre 0
+scalaire rayon_filtre 0.12
+
+// Probleme dedie pour compter les elements
+problemeef ProbBruit
+{ ProbBruit
+tfdiffusion Tf_bruit [champgeo, bruit_blanc, bruit_blanc, Z, schema_intg]
+}
+
+vecteur vec_bruit_blanc [ProbBruit, "colonne"]
+
+// 1. Injection
+pp_copie_vecteur_dans_champs pp_import_bruit [vec_bruit_blanc, bruit_blanc, bruit_blanc]
+
+// 2. Le Filtre (Source, Destination, Rayon)
+pp_filtrage_gaussien applique_filtre_gaussien [bruit_blanc, bruit_filtre, rayon_filtre]
+
+// 3. Application au materiau
+scalaire K_spatial_formule 1.0+bruit_filtre
+pp_reinterpole pp_interpole_K_spatial [K, K_spatial_formule]
+// =======================================================
+
+################################################################################
+# 5. FORMULATION FAIBLE ET CONDITIONS AUX LIMITES
+################################################################################
+{ ProbDida
+tfdiffusiondiffusivite1d    TFDiffT [champgeo, T, T, K, schema_intg]
+TFSourceFVScal TFSrcF  [champgeo, F, T,    schema_intg]
+
+# La température est ancrée à 0 sur 3 bords
+
+scalaire cond_nul   0.0
+
+# Le flux entrant sin(pi*x) sur le bord du haut
+
+scalaire flux_haut f(x,y,z)=sin(3.14159265359*x)
+
+# CONDITIONS AUX LIMITES EXACTES
+
+dirichlet scalaire "bord_bas" "T" "cond_nul"
+dirichlet scalaire "bord_gauche" "T" "cond_nul"
+dirichlet scalaire "bord_droit" "T" "cond_nul"
+
+neumann scalaire "bord_haut" "T" "flux_haut" "schema_intg"
+
+ajoute_pp [exportation_TK,FinPasDeTemps]
+}
+
+{ ProbFactice
+tfdiffusion Tf_factice [champgeo, K, K, Z, schema_intg]
+}
+{ ProbFactice2
+tfdiffusion Tf_factice2 [champgeo, F2, F2, Z, schema_intg]
+}
+{ ProbFactice3
+tfdiffusion Tf_factice3 [champgeo, F3, F3, Z, schema_intg]
+}
+
+{ Actions 
+  Solveur(ProbDida) 
+}
