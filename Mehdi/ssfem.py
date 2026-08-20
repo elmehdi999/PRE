@@ -47,7 +47,7 @@ class ssfem:
         #Initialisation du problème EF et des bibliothèques petsc4py et mefpp4py
         prefixe = "conduction"                  #Mettre nom du fichier .champs
         petsc4py.init(sys.argv)
-        mefpp.initialise(prefixe,pModeTV=False)     #Si pModeTV=True , déclenchement de Warning et erreurs qui empêchent l'éxecution
+        mefpp.initialise(prefixe)     #NE PREND PLUS L'ARG pModeTV (Si pModeTV=True , déclenchement de Warning et erreurs qui empêchent l'éxecution)
         mefpp.litEtExecuteActionsDansCollection()
         collection=mefpp.reqCollectionDeCorps()
         collection.lisDonneesDeBase([prefixe])
@@ -207,7 +207,35 @@ class ssfem:
             else:
                 print("La résolution n'a pas convergé")
                 print(f"Résidu final : {ksp.getResidualNorm()}")
-
+            try:
+                import numpy as np
+                
+                T0 = self.T_assemble.getNestSubVecs()[0]
+                valeurs_T0 = np.array(T0.getArray())
+                
+                _gfc = self.gfc if hasattr(self, 'gfc') else gfc
+                
+                # 1. On lance l'interpolation C++ définie dans le .champs
+                _gfc.reqPP("pp_interpoleTexacte").execute()
+                
+                # 2. On lance la copie C++ vers le vecteur PETSc
+                _gfc.reqPP("pp_copie_Texacte_vec").execute()
+                
+                # 3. Extraction du vecteur exact
+                vec_exact = _gfc.reqVecteurPETSc("T_exacte_vec").reqVec()
+                vec_exact.assemble()
+                valeurs_exactes = np.array(vec_exact.getArray())
+                
+                if len(valeurs_exactes) == len(valeurs_T0):
+                    erreur_max = float(np.max(np.abs(valeurs_T0 - valeurs_exactes)))
+                    print(f"RESULTAT_BENCHMARK_ERREUR={erreur_max}")
+                else:
+                    print(f"RESULTAT_BENCHMARK_ERREUR=ERREUR_TAILLE_PETSC")
+                    
+            except Exception as e:
+                err_name = type(e).__name__
+                err_msg = str(e).replace(' ', '_').replace('\n', '')
+                print(f"RESULTAT_BENCHMARK_ERREUR=BUG_{err_name}_{err_msg}")
         except PETSc.Error as e:
             print(f"Erreur lors de la résolution : {e}")
             

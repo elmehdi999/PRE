@@ -61,8 +61,8 @@ class ks:
         #On affiche True si l'hypothèse est validée, False sinon
         calcul_max = 0
         for j in range(self.size_sample-1):
-            normal_cdf_j = norm.cdf(self.echantillon[j],loc=self.mean,scale=self.var)
-            normal_cdf_j1 = norm.cdf(self.echantillon[j+1],loc=self.mean,scale=self.var)
+            normal_cdf_j = norm.cdf(self.echantillon[j],loc=self.mean,scale=np.sqrt(self.var))
+            normal_cdf_j1 = norm.cdf(self.echantillon[j+1],loc=self.mean,scale=np.sqrt(self.var))
             if np.abs(self.F(self.echantillon[j]) - normal_cdf_j) > calcul_max:
                 calcul_max = np.abs(self.F(self.echantillon[j]) - normal_cdf_j)
                 # print("Nouveau max : ", calcul_max, " avec indice : ", j, " et [x_j]= ", self.echantillon[j])
@@ -88,7 +88,7 @@ class ks:
         print(len(self.echantillon))
         #plt.hist(self.echantillon,bins=20,density=True,alpha=0.5)
         plt.plot(self.echantillon,[self.F(self.echantillon[i]) for i in range(self.size_sample)],label="echantillon")
-        plt.plot(self.echantillon,[norm.cdf(self.echantillon[i],loc=self.mean,scale=self.var) for i in range(self.size_sample)],label="loi normale")
+        plt.plot(self.echantillon,[norm.cdf(self.echantillon[i],loc=self.mean,scale=np.sqrt(self.var)) for i in range(self.size_sample)],label="loi normale")
         plt.legend()
         plt.savefig("ks_ssfem_14_10.png")
         plt.show()

@@ -1,4 +1,0 @@
-REMARQUES
-
-KL: des superbes resultats, tres bien a l'ordre 14 2 (erreur max = 10^-2), rapide, MAIS seulement pour le probleme 1D
-RFF: rapide pour D < 150, PCE = 3 n'offre pas d'avatange par rapport a 2, tres bien pour D = 250 mais lent (probleme 1D)

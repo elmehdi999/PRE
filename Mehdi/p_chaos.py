@@ -132,7 +132,7 @@ def calcul_cijk(i,j,k,ordreKL):
     """
     
     alpha_i = alpha_gras(ordreKL,j)
-    print(f"alpha_i : {alpha_i}")
+    #print(f"alpha_i : {alpha_i}")
     beta_i = alpha_gras(ordreKL,k)
     
     if i != 0:
@@ -207,4 +207,3 @@ def eval_pc_basis(nb_terms, dim, x):
         alpha = alpha_gras(dim, i+1)
         values[i] = multi_hermite_poly(alpha,x[i])
     return values
-
